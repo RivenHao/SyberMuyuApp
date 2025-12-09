@@ -1,0 +1,67 @@
+.index-page {
+  position: relative;
+  height: 100vh;
+  background-color: #000; // 黑色背景
+}
+
+.merit-pool {
+  position: absolute;
+  top: 100rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.muyu-container {
+  position: absolute;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%); // 居中定位
+  
+  // 木鱼图片
+  .muyu-img {
+    width: 400rpx;
+    height: 300rpx;
+    transition: transform 0.1s ease; // 平滑过渡
+
+    &.active {
+      transform: scale(0.95); // 点击时缩小
+    }
+  }
+}
+
+// 漂浮文字 "功德+1"
+.merit-text {
+  position: absolute;
+  font-size: 40rpx;
+  color: #ffd700; // 金色
+  font-weight: bold;
+  opacity: 0; // 初始隐藏
+  
+  // 初始位置：屏幕中心偏下（木鱼上方）
+  // 注意：因为是绝对定位，top/left 是相对于 .index-page
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%); // 先居中
+  
+  pointer-events: none; // 让文字不阻挡点击
+  z-index: 10;
+
+  &.animate {
+    animation: floatUp 0.8s ease-out forwards;
+  }
+}
+
+@keyframes floatUp {
+  0% {
+    transform: translate(-50%, -50%); // 起始位置
+    opacity: 1;
+  }
+
+  100% {
+    transform: translate(-50%, -200rpx); // 向上漂浮 200rpx
+    opacity: 0;
+  }
+}
