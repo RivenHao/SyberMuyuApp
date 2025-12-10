@@ -4,7 +4,7 @@ import { View, Text } from "@tarojs/components";
 import './index.scss'
 import { getGalleryList, decreaseMerit, increasePoolLevel } from "../../apis";
 import { UserInfo } from "../../apis/type";
-import { poolMap } from "../../pages/index/index";
+import { poolMap } from "../../config/poolMap";
 
 interface DonateModalProps {
   show: boolean

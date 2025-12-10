@@ -1,0 +1,49 @@
+.index-page {
+  position: relative;
+  height: 100vh;
+  background-color: #000; // 黑色背景
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.back-btn{
+  position: absolute;
+  top: 6%;
+  left: 5%;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: bold;
+}
+.wish-textarea-container{
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  .wish-textarea{
+    border: 1px solid #fff;
+    background: #fff;
+  }
+}
+.wish-button{
+  width: 60%;
+  height: 100rpx;
+  background: #fff;
+  position: fixed;
+  bottom: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  line-height: 100rpx;
+}
+.wish-title{
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 40rpx;
+  font-weight: bold;
+}

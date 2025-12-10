@@ -1,4 +1,5 @@
 import { View, Text, Image, Button } from "@tarojs/components";
+import Taro from "@tarojs/taro";
 import wishPng from '../../imgs/wish.png'
 import closePng from '../../imgs/close.png'
 import './index.scss'
@@ -12,7 +13,8 @@ export default function WishModal(props: WishModalProps) {
   const { show, onClose, onDonate } = props
   if (!show) return null
   const handleWish = () => {
-    console.log('发愿心')
+    onClose()
+    Taro.navigateTo({ url: '/pages/wish/index' })
   }
   const handleClose = () => {
     onClose()

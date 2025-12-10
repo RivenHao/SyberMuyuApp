@@ -6,15 +6,7 @@ import fishPng from '../../imgs/fish.png'
 import { syncMerit, getUserInfo } from '../../apis' // 引入 post
 import WishModal from '../../components/WishModal' // 引入弹窗
 import DonateModal from '../../components/DonateModal'
-
-export const poolMap = {
-  0: 10,
-  1: 20,
-  2: 200,
-  3: 400,
-  4: 600,
-  5: 800,
-}
+import { poolMap } from '../../config/poolMap'
 // 定义连击阶段类型
 type ComboStage = 'normal' | 'blue' | 'red' | 'orange';
 
@@ -151,6 +143,13 @@ export default function Index() {
 
   return (
     <View className='index-page'>
+      <View className='navbar'>
+        <View className='navbar-item'>设置</View>
+        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/wish/index' })}>还愿</View>
+        <View className='navbar-item'>众生</View>
+        <View className='navbar-item'>佛理图鉴</View>
+      </View>
+
       <View className='merit-pool-container' onClick={handleWish}>
         <Text className='merit-pool-title'>
           { merit >= meritPoolMax ? '功德池已满，可祈愿' : '功德池' }</Text>
