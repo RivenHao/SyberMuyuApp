@@ -42,6 +42,7 @@
     "@tarojs/components": "4.1.8",
     "@tarojs/helper": "4.1.8",
     "@tarojs/plugin-framework-react": "4.1.8",
+    "@tarojs/plugin-html": "^4.1.8",
     "@tarojs/plugin-platform-alipay": "4.1.8",
     "@tarojs/plugin-platform-h5": "4.1.8",
     "@tarojs/plugin-platform-harmony-hybrid": "4.1.8",

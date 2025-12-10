@@ -2,16 +2,48 @@
   position: relative;
   height: 100vh;
   background-color: #000; // 黑色背景
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
-.merit-pool {
+.merit-pool-container {
+  width: 60%;
+  height: 80rpx;
   position: absolute;
-  top: 100rpx;
+  top: 200rpx;
   left: 50%;
   transform: translateX(-50%);
   color: #fff;
-  font-size: 36rpx;
   font-weight: bold;
+  text-align: center;
+  font-size: 36rpx;
+}
+.merit-pool {
+  border: 1px solid #fff;
+  line-height: 80rpx;
+  border-radius: 10rpx;
+  margin-top: 10rpx;
+  background-color: transparent;
+  overflow: hidden;
+  position: relative; // 确保内部绝对定位相对于它
+
+  .merit-pool-current {
+    position: absolute; // 绝对定位，脱离文档流，不占位
+    top: 0;
+    left: 0;
+    height: 100%;
+    background-color: #18ace7; // 蓝色进度条
+    transition: width 0.3s ease;
+    z-index: 1; // 在下层
+  }
+
+  // 数字文字需要浮在进度条上面
+  text {
+    position: relative;
+    z-index: 2; // 在上层
+    display: block;
+    text-align: center;
+  }
 }
 
 .muyu-container {
@@ -19,7 +51,34 @@
   top: 60%;
   left: 50%;
   transform: translate(-50%, -50%); // 居中定位
-  
+  border-radius: 50%;
+  width: 500rpx;
+  height: 500rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  // 蓝色阶段 (Blue)
+  &.blue {
+    box-shadow: 0 0 60rpx rgba(24, 144, 255, 0.6), inset 0 0 30rpx rgba(24, 144, 255, 0.3);
+    border-color: rgba(24, 144, 255, 0.5);
+    animation: breathe-blue 2s infinite ease-in-out;
+  }
+
+  // 红色阶段 (Red)
+  &.red {
+    box-shadow: 0 0 80rpx rgba(255, 77, 79, 0.7), inset 0 0 40rpx rgba(255, 77, 79, 0.4);
+    border-color: rgba(255, 77, 79, 0.6);
+    animation: breathe-red 1.5s infinite ease-in-out;
+  }
+
+  // 橙色阶段 (Orange - 暴走模式)
+  &.orange {
+    box-shadow: 0 0 100rpx rgba(255, 165, 0, 0.9), inset 0 0 50rpx rgba(255, 165, 0, 0.5);
+    border-color: rgba(255, 165, 0, 0.7);
+    animation: breathe-orange 1s infinite ease-in-out;
+  }
+
   // 木鱼图片
   .muyu-img {
     width: 400rpx;
@@ -36,12 +95,11 @@
 .merit-text {
   position: absolute;
   font-size: 40rpx;
-  color: #ffd700; // 金色
+  color: #ffffff; // 默认白色 (Stage 0)
   font-weight: bold;
   opacity: 0; // 初始隐藏
   
   // 初始位置：屏幕中心偏下（木鱼上方）
-  // 注意：因为是绝对定位，top/left 是相对于 .index-page
   top: 50%; 
   left: 50%;
   transform: translate(-50%, -50%); // 先居中
@@ -52,6 +110,24 @@
   &.animate {
     animation: floatUp 0.8s ease-out forwards;
   }
+
+  // --- 连击阶段样式 ---
+  &.blue {
+    color: #1890ff; // 蓝色 (5-9连击)
+    text-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
+  }
+
+  &.red {
+    color: #ff4d4f; // 红色 (10-14连击)
+    font-size: 44rpx;
+    text-shadow: 0 0 8px rgba(255, 77, 79, 0.6);
+  }
+
+  &.orange {
+    color: #fa8c16; // 橙色 (15+连击)
+    font-size: 50rpx;
+    text-shadow: 0 0 12px rgba(250, 140, 22, 0.8);
+  }
 }
 
 @keyframes floatUp {
@@ -61,7 +137,25 @@
   }
 
   100% {
-    transform: translate(-50%, -200rpx); // 向上漂浮 200rpx
+    transform: translate(-50%, -400rpx); // 向上漂浮 400rpx
     opacity: 0;
   }
+}
+
+// 蓝色呼吸
+@keyframes breathe-blue {
+  0%, 100% { box-shadow: 0 0 50rpx rgba(24, 144, 255, 0.5), inset 0 0 30rpx rgba(24, 144, 255, 0.3); }
+  50% { box-shadow: 0 0 70rpx rgba(24, 144, 255, 0.8), inset 0 0 40rpx rgba(24, 144, 255, 0.5); }
+}
+
+// 红色呼吸
+@keyframes breathe-red {
+  0%, 100% { box-shadow: 0 0 60rpx rgba(255, 77, 79, 0.6), inset 0 0 40rpx rgba(255, 77, 79, 0.4); }
+  50% { box-shadow: 0 0 90rpx rgba(255, 77, 79, 0.9), inset 0 0 50rpx rgba(255, 77, 79, 0.6); }
+}
+
+// 橙色呼吸 (剧烈)
+@keyframes breathe-orange {
+  0%, 100% { box-shadow: 0 0 80rpx rgba(255, 165, 0, 0.8), inset 0 0 50rpx rgba(255, 165, 0, 0.5); }
+  50% { box-shadow: 0 0 120rpx rgba(255, 165, 0, 1), inset 0 0 70rpx rgba(255, 165, 0, 0.7); }
 }

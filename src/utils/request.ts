@@ -2,7 +2,7 @@ import Taro from '@tarojs/taro'
 import { BASE_URL } from '../config/baseUrl'
 
 // 定义接口返回的标准格式
-interface ApiResponse<T = any> {
+export interface ApiResponse<T = any> {
   code: number
   data: T
   msg: string
