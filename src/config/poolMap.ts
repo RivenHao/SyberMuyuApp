@@ -2,8 +2,8 @@
 export const poolMap: Record<number, number> = {
   0: 10,
   1: 20,
-  2: 200,
-  3: 400,
+  2: 30,
+  3: 40,
   4: 600,
   5: 800,
 }

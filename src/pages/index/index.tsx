@@ -3,7 +3,7 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import './index.scss'
 import fishPng from '../../imgs/fish.png'
-import { syncMerit, getUserInfo } from '../../apis' // 引入 post
+import { syncMerit, getUserInfo, ensureLogin } from '../../apis'
 import WishModal from '../../components/WishModal' // 引入弹窗
 import DonateModal from '../../components/DonateModal'
 import { poolMap } from '../../config/poolMap'
@@ -32,12 +32,14 @@ export default function Index() {
   const [stage, setStage] = useState<ComboStage>('normal')
   const [userInfo, setUserInfo] = useState<any>(null)
 
+  // 初始化
   const init = async () => {
-    const res = await getUserInfo()
+    const userId = await ensureLogin() // 确保已登录，返回用户ID
+    const res = await getUserInfo(userId)
     setUserInfo(res)
     const { pool_level, current_merit } = res
     setMeritPoolMax(poolMap[pool_level])
-    setMerit(Number(current_merit)) // 确保是数字
+    setMerit(Number(current_merit))
   }
   
   useDidShow(() => {
@@ -63,17 +65,28 @@ export default function Index() {
     });
   }
 
+  // 祈愿
   const handleWish = () => {
     console.log('祈愿')
-    setShowModal(true)
+    if (merit >= meritPoolMax) {
+      setShowModal(true)
+    } else {
+      Taro.showToast({
+        title: '功德不足，请继续积累',
+        icon: 'none',
+      })
+      return
+    }
   }
 
+  // 捐香火
   const handleDonate = async () => {
     console.log('捐香火')
     setShowModal(false)
     setShowDonateModal(true)
   }
 
+  // 敲木鱼
   const handleTap = () => {
     const now = Date.now();
     const interval = now - lastTapTime.current;
@@ -147,8 +160,8 @@ export default function Index() {
     <View className='index-page'>
       <View className='navbar'>
         <View className='navbar-item'>设置</View>
-        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/wish/index' })}>还愿</View>
-        <View className='navbar-item'>众生</View>
+        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/fulfill/index' })}>还愿</View>
+        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/beings/index' })}>众生</View>
         <View className='navbar-item' onClick={() => setShowGalleryModal(true)}>佛理图鉴</View>
       </View>
 

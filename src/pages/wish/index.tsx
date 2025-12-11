@@ -21,10 +21,20 @@ export default function Wish() {
       });
       return;
     }
-    console.log('用功德发愿心', wish)
-    await createWish({ content: wish, user_id: Taro.getStorageSync('token'), merit_cost: meritCost })
-    await increasePoolLevel()
-    Taro.navigateBack()
+    Taro.showModal({
+      title: '用功德发愿心',
+      content: `确认后将不可修改，请谨慎填写\n消耗功德：${meritCost}`,
+      success: async (res) => {
+        if (res.confirm) {
+          await createWish({ content: wish, user_id: Taro.getStorageSync('token'), merit_cost: meritCost })
+          await increasePoolLevel()
+          Taro.navigateBack()
+        } else {
+          return;
+        }
+      }
+    })
+    
   }
   return (
     <View className='index-page'>
