@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
-import Taro, { useLoad } from '@tarojs/taro'
+import Taro, { useDidShow } from '@tarojs/taro'
 import './index.scss'
 import fishPng from '../../imgs/fish.png'
 import { syncMerit, getUserInfo } from '../../apis' // 引入 post
 import WishModal from '../../components/WishModal' // 引入弹窗
 import DonateModal from '../../components/DonateModal'
 import { poolMap } from '../../config/poolMap'
+import GalleryModal from '../../components/GalleryModal'
 // 定义连击阶段类型
 type ComboStage = 'normal' | 'blue' | 'red' | 'orange';
 
@@ -23,6 +24,7 @@ export default function Index() {
   const [meritPoolMax, setMeritPoolMax] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [showDonateModal, setShowDonateModal] = useState(false)
+  const [showGalleryModal, setShowGalleryModal] = useState(false)
   const lastTapTime = useRef<number>(0)
   const comboCount = useRef<number>(0) // 连击计数器
   const pendingMerit = useRef<number>(0) // 待同步的功德
@@ -38,8 +40,8 @@ export default function Index() {
     setMerit(Number(current_merit)) // 确保是数字
   }
   
-  useLoad(() => {
-    console.log('Page loaded.')
+  useDidShow(() => {
+    console.log('Page shown.')
     init()
   })
 
@@ -147,7 +149,7 @@ export default function Index() {
         <View className='navbar-item'>设置</View>
         <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/wish/index' })}>还愿</View>
         <View className='navbar-item'>众生</View>
-        <View className='navbar-item'>佛理图鉴</View>
+        <View className='navbar-item' onClick={() => setShowGalleryModal(true)}>佛理图鉴</View>
       </View>
 
       <View className='merit-pool-container' onClick={handleWish}>
@@ -172,8 +174,9 @@ export default function Index() {
           功德+{item.meritAdd}
         </Text>
       ))}
-      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} />
+      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} />
       <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} />
+      <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
     </View>
   )
 }

@@ -8,13 +8,14 @@ interface WishModalProps {
   show: boolean
   onClose: () => void
   onDonate: () => void
+  meritCost: number
 }
 export default function WishModal(props: WishModalProps) {
-  const { show, onClose, onDonate } = props
+  const { show, onClose, onDonate, meritCost } = props
   if (!show) return null
   const handleWish = () => {
     onClose()
-    Taro.navigateTo({ url: '/pages/wish/index' })
+    Taro.navigateTo({ url: `/pages/wish/index?merit_cost=${meritCost}` })
   }
   const handleClose = () => {
     onClose()
@@ -28,8 +29,8 @@ export default function WishModal(props: WishModalProps) {
         </View>
         <Image src={wishPng} className='wish-img' />
         <Text>愿行合一</Text>
-        <Button onClick={onDonate} className='btn'>捐香火，予诸佛（50功德）</Button>
-        <Button onClick={handleWish} className='btn'>用功德，发愿心（50功德）</Button>
+        <Button onClick={onDonate} className='btn'>捐香火，予诸佛（{meritCost}功德）</Button>
+        <Button onClick={handleWish} className='btn'>用功德，发愿心（{meritCost}功德）</Button>
       </View>
     </View>
   )
