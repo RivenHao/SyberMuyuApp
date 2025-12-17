@@ -3,11 +3,18 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import './index.scss'
 import fishPng from '../../imgs/fish.png'
-import { syncMerit, getUserInfo, ensureLogin } from '../../apis'
+import { syncMerit, SettingData } from '../../apis'
+import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal' // 引入弹窗
 import DonateModal from '../../components/DonateModal'
 import { poolMap } from '../../config/poolMap'
 import GalleryModal from '../../components/GalleryModal'
+import SettingModal from '../../components/SettingModal'
+
+import normalSound from '../../audios/normal.mp3'
+import blueSound from '../../audios/blue.mp3'
+import redSound from '../../audios/red.mp3'
+import orangeSound from '../../audios/orange.mp3'
 // 定义连击阶段类型
 type ComboStage = 'normal' | 'blue' | 'red' | 'orange';
 
@@ -25,21 +32,68 @@ export default function Index() {
   const [showModal, setShowModal] = useState(false)
   const [showDonateModal, setShowDonateModal] = useState(false)
   const [showGalleryModal, setShowGalleryModal] = useState(false)
+  const [showSettingModal, setShowSettingModal] = useState(false)
   const lastTapTime = useRef<number>(0)
   const comboCount = useRef<number>(0) // 连击计数器
   const pendingMerit = useRef<number>(0) // 待同步的功德
   const syncTimer = useRef<any>(null) // 同步定时器
   const [stage, setStage] = useState<ComboStage>('normal')
   const [userInfo, setUserInfo] = useState<any>(null)
+  const [setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
+  
+  // 不同连击阶段的音效
+  const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext | null>>({
+    normal: null,
+    blue: null,
+    red: null,
+    orange: null
+  })
+
+  // 音效资源配置
+  const SOUND_URLS: Record<ComboStage, string> = {
+    normal: normalSound,  // 基础木鱼声
+    blue: blueSound,    // 清脆铃声
+    red: redSound,     // 深沉钟声
+    orange: orangeSound   // 悠扬禅钟
+  }
+
+  // 初始化音频
+  useEffect(() => {
+    // 创建4个音频实例
+    const stageList: ComboStage[] = ['normal', 'blue', 'red', 'orange']
+    const ctxMap = audioContexts.current
+    
+    stageList.forEach(s => {
+      const ctx = Taro.createInnerAudioContext()
+      ctx.src = SOUND_URLS[s]
+      ctxMap[s] = ctx
+    })
+    
+    return () => {
+      stageList.forEach(s => {
+        ctxMap[s]?.destroy()
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // 播放敲击音效（根据当前阶段）
+  const playTapSound = (currentStage: ComboStage) => {
+    if (!setting.sound) return
+    const ctx = audioContexts.current[currentStage]
+    if (!ctx) return
+    ctx.stop()
+    ctx.seek(0)
+    ctx.play()
+  }
 
   // 初始化
   const init = async () => {
-    const userId = await ensureLogin() // 确保已登录，返回用户ID
-    const res = await getUserInfo(userId)
-    setUserInfo(res)
-    const { pool_level, current_merit } = res
-    setMeritPoolMax(poolMap[pool_level])
-    setMerit(Number(current_merit))
+    const { user, setting: settingData } = await ensureLogin() // 确保已登录，返回用户ID
+    setUserInfo(user)
+    setMeritPoolMax(poolMap[user.pool_level])
+    setMerit(Number(user.current_merit))
+    setSetting(settingData)
   }
   
   useDidShow(() => {
@@ -55,7 +109,7 @@ export default function Index() {
     pendingMerit.current = 0; // 立即清零，防止重复同步
 
     // 发送请求
-    syncMerit(increment).then((res: any) => {
+    syncMerit({ increment, openid: userInfo.openid }).then((res: any) => {
       console.log('功德同步成功', res);
       // 可以选择是否用后端返回的 merit 覆盖本地，为了体验流畅通常不覆盖，除非误差太大
     }).catch(err => {
@@ -95,35 +149,41 @@ export default function Index() {
     // 第一次点击，视为连击开始
     if (lastTapTime.current === 0) {
       comboCount.current = 1;
-      Taro.vibrateShort({ type: 'light' });
+      if (setting.vibration) Taro.vibrateShort({ type: 'light' });
     } else {
       if (interval >= 750 && interval <= 1500) {
         // 命中节奏 -> 连击 +1
         comboCount.current += 1;
-        Taro.vibrateShort({ type: 'medium' });
+        if (setting.vibration) Taro.vibrateShort({ type: 'medium' });
       } else {
         // 节奏中断 -> 重置为 1
         comboCount.current = 1;
         setStage('normal');
-        Taro.vibrateShort({ type: 'light' });
+        if (setting.vibration) Taro.vibrateShort({ type: 'light' });
       }
     }
     lastTapTime.current = now;
 
     // --- 计算阶段颜色和加分 ---
     let meritAdd = 1; // 默认 +1
+    let currentStage: ComboStage = 'normal';
     const c = comboCount.current;
     
     if (c >= 15) {
-      setStage('orange');
+      currentStage = 'orange';
       meritAdd = 4;
     } else if (c >= 10) {
-      setStage('red');
+      currentStage = 'red';
       meritAdd = 3;
     } else if (c >= 5) {
-      setStage('blue');
+      currentStage = 'blue';
       meritAdd = 2;
     }
+    
+    setStage(currentStage);
+    
+    // 播放对应阶段的音效
+    playTapSound(currentStage)
 
     // 更新本地功德 (UI)
     setMerit(prev => prev + meritAdd)
@@ -159,7 +219,7 @@ export default function Index() {
   return (
     <View className='index-page'>
       <View className='navbar'>
-        <View className='navbar-item'>设置</View>
+        <View className='navbar-item' onClick={() => setShowSettingModal(true)}>设置</View>
         <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/fulfill/index' })}>还愿</View>
         <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/beings/index' })}>众生</View>
         <View className='navbar-item' onClick={() => setShowGalleryModal(true)}>佛理图鉴</View>
@@ -190,6 +250,11 @@ export default function Index() {
       <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} />
       <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
+      <SettingModal 
+        show={showSettingModal} 
+        onClose={() => setShowSettingModal(false)} 
+        onSettingChange={setSetting}
+      />
     </View>
   )
 }
