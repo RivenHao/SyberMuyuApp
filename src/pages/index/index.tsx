@@ -10,6 +10,7 @@ import DonateModal from '../../components/DonateModal'
 import { getPoolCapacity } from '../../config/poolMap'
 import GalleryModal from '../../components/GalleryModal'
 import SettingModal from '../../components/SettingModal'
+import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanvas'
 
 import normalSound from '../../audios/normal.mp3'
 import blueSound from '../../audios/blue.mp3'
@@ -18,16 +19,9 @@ import orangeSound from '../../audios/orange.mp3'
 // 定义连击阶段类型
 type ComboStage = 'normal' | 'blue' | 'red' | 'orange';
 
-interface PopupItem {
-  id: number;
-  combo: number;
-  meritAdd: number; // 新增：单次加分数值
-}
-
 export default function Index() {
   const [merit, setMerit] = useState(0)
   const [isAnimate, setIsAnimate] = useState(false)
-  const [popups, setPopups] = useState<PopupItem[]>([]) 
   const [meritPoolMax, setMeritPoolMax] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [showDonateModal, setShowDonateModal] = useState(false)
@@ -42,6 +36,11 @@ export default function Index() {
   const [setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
   
+  // 粒子效果相关
+  const particleRef = useRef<ParticleCanvasRef>(null)
+  const poolTarget = useRef({ x: 200, y: 100 }) // 功德池目标位置
+  const muyuPos = useRef({ x: 200, y: 400 }) // 木鱼位置
+
   // 不同连击阶段的音效
   const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext | null>>({
     normal: null,
@@ -117,6 +116,28 @@ export default function Index() {
   
   useDidShow(() => {
     init()
+    // 获取功德池和木鱼的位置
+    setTimeout(() => {
+      const query = Taro.createSelectorQuery()
+      query.select('.merit-pool-container').boundingClientRect()
+      query.select('.muyu-container').boundingClientRect()
+      query.exec((res) => {
+        if (res[0]) {
+          // 功德池中心位置
+          poolTarget.current = {
+            x: res[0].left + res[0].width / 2,
+            y: res[0].top + res[0].height / 2
+          }
+        }
+        if (res[1]) {
+          // 木鱼中心位置
+          muyuPos.current = {
+            x: res[1].left + res[1].width / 2,
+            y: res[1].top + res[1].height / 3 // 偏上一点
+          }
+        }
+      })
+    }, 500)
   })
 
   // 功德同步逻辑 (防抖)
@@ -202,27 +223,38 @@ export default function Index() {
     // 播放对应阶段的音效
     playTapSound(currentStage)
 
-    // 更新本地功德 (UI)
-    setMerit(prev => prev + meritAdd)
-    
-    // 累加待同步功德
-    pendingMerit.current += meritAdd;
-
-    // 重置/启动防抖定时器 (2秒无操作自动同步)
-    if (syncTimer.current) clearTimeout(syncTimer.current);
-    syncTimer.current = setTimeout(syncMeritToBackend, 1000);
-
     // 动画
     setIsAnimate(true)
     setTimeout(() => setIsAnimate(false), 100)
 
-    // 漂浮文字
-    const id = Date.now()
-    setPopups(prev => [...prev, { id, combo: c, meritAdd }])
+    // 发射粒子效果，粒子到达后再更新进度
+    const colors: Record<ComboStage, string> = {
+      normal: '#ffffff',
+      blue: '#4fc3f7',
+      red: '#ff5252',
+      orange: '#ffb74d'
+    }
     
-    setTimeout(() => {
-      setPopups(prev => prev.filter(item => item.id !== id)) // 删除漂浮文字
-    }, 1000)
+    // 保存当前要加的值（闭包）
+    const addValue = meritAdd
+    
+    particleRef.current?.emit(
+      muyuPos.current.x,
+      muyuPos.current.y,
+      poolTarget.current.x,
+      poolTarget.current.y,
+      `功德+${meritAdd}`,
+      colors[currentStage],
+      // 粒子到达后的回调：更新进度
+      () => {
+        setMerit(prev => prev + addValue)
+        pendingMerit.current += addValue
+        
+        // 重置/启动防抖定时器
+        if (syncTimer.current) clearTimeout(syncTimer.current)
+        syncTimer.current = setTimeout(syncMeritToBackend, 1000)
+      }
+    )
   }
 
   // 页面卸载时强制同步一次
@@ -254,16 +286,8 @@ export default function Index() {
         <Image src={fishPng} className={`muyu-img ${isAnimate ? 'active' : ''}`} />
       </View>
       
-      {popups.map(item => (
-        <Text 
-          key={item.id} 
-          className='merit-text animate'
-        >
-          {/* 显示具体的加分值和连击数 */}
-          {/* {item.combo > 1 ? `功德+${item.meritAdd} x${item.combo}` : `功德+${item.meritAdd}`} */}
-          功德+{item.meritAdd}
-        </Text>
-      ))}
+      {/* Canvas 粒子效果层 */}
+      <ParticleCanvas ref={particleRef} />
       <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
       <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
