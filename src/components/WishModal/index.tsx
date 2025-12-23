@@ -9,17 +9,26 @@ interface WishModalProps {
   onClose: () => void
   onDonate: () => void
   meritCost: number
+  allCollected?: boolean // 是否已集齐所有佛理图鉴
 }
 export default function WishModal(props: WishModalProps) {
-  const { show, onClose, onDonate, meritCost } = props
+  const { show, onClose, onDonate, meritCost, allCollected = false } = props
   if (!show) return null
+  
   const handleWish = () => {
     onClose()
     Taro.navigateTo({ url: `/pages/wish/index?merit_cost=${meritCost}` })
   }
+  
+  const handleDonate = () => {
+    if (allCollected) return // 已集齐则不响应点击
+    onDonate()
+  }
+  
   const handleClose = () => {
     onClose()
   }
+  
   return (
     <View className='modal'>
       <View className='modal-content'>
@@ -29,7 +38,13 @@ export default function WishModal(props: WishModalProps) {
         </View>
         <Image src={wishPng} className='wish-img' />
         <Text>愿行合一</Text>
-        <Button onClick={onDonate} className='btn'>捐香火，予诸佛（{meritCost}功德）</Button>
+        <Button 
+          onClick={handleDonate} 
+          className={`btn ${allCollected ? 'btn-disabled' : ''}`}
+          disabled={allCollected}
+        >
+          {allCollected ? '佛理图鉴已集齐' : `捐香火，予诸佛（${meritCost}功德）`}
+        </Button>
         <Button onClick={handleWish} className='btn'>用功德，发愿心（{meritCost}功德）</Button>
       </View>
     </View>

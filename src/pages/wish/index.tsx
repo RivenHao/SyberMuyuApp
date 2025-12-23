@@ -26,7 +26,8 @@ export default function Wish() {
       content: `确认后将不可修改，请谨慎填写\n消耗功德：${meritCost}`,
       success: async (res) => {
         if (res.confirm) {
-          await createWish({ content: wish, user_id: Taro.getStorageSync('token'), merit_cost: meritCost })
+          // token 自动从 header 带上，不需要传 user_id
+          await createWish({ content: wish, merit_cost: meritCost })
           await increasePoolLevel()
           Taro.navigateBack()
         } else {

@@ -1,10 +1,11 @@
 import { useState } from "react";
+import Taro from "@tarojs/taro";
 
 import { View, Text } from "@tarojs/components";
 import './index.scss'
 import { getGalleryList, decreaseMerit, increasePoolLevel } from "../../apis";
 import { UserInfo } from "../../apis/type";
-import { poolMap } from "../../config/poolMap";
+import { getPoolCapacity, MAX_POOL_LEVEL } from "../../config/poolMap";
 
 interface DonateModalProps {
   show: boolean
@@ -17,8 +18,10 @@ export default function DonateModal(props: DonateModalProps) {
   const { show, onClose, userInfo, onRefresh } = props
   const [isFlipped, setIsFlipped] = useState(false)
   const [cardInfo, setCardInfo] = useState<any>(null)
+  const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有卡片
 
   if (!show) return null
+  
   const handleFlip = () => {
     if (!isFlipped) {
       setIsFlipped(true)
@@ -27,19 +30,50 @@ export default function DonateModal(props: DonateModalProps) {
 
   const handleClose = () => {
     setIsFlipped(false) // 重置状态
+    setCardInfo(null)
+    setAllCollected(false)
     onClose()
   }
 
   const handleDonate = async () => {
-    console.log('捐香火')
-    // 获取佛理卡片
-    const cardRes = await getGalleryList(userInfo.id)
-    setCardInfo(cardRes)
-    // 减少功德
-    await decreaseMerit(poolMap[userInfo.pool_level as keyof typeof poolMap])
-    // 扩充容量
-    await increasePoolLevel()
-    onRefresh()
+    try {
+      // 1. 抽取佛理卡片
+      const cardRes: any = await getGalleryList()
+      
+      // 处理抽卡结果
+      if (cardRes === null) {
+        // code=1: 已集齐所有卡片
+        setAllCollected(true)
+        setCardInfo(null)
+      } else {
+        setCardInfo(cardRes)
+        setAllCollected(false)
+      }
+      
+      // 2. 减少功德（使用当前池子容量）
+      const meritCost = getPoolCapacity(userInfo.pool_level ?? 0)
+      await decreaseMerit(meritCost)
+      
+      // 3. 扩充容量（检查是否已达上限）
+      const currentLevel = userInfo.pool_level ?? 0
+      if (currentLevel < MAX_POOL_LEVEL) {
+        await increasePoolLevel()
+      } 
+      // else {
+      //   Taro.showToast({
+      //     title: '功德池已达最大容量',
+      //     icon: 'none',
+      //   })
+      // }
+      
+      onRefresh()
+    } catch (err: any) {
+      console.error('捐香火失败:', err)
+      Taro.showToast({
+        title: err?.msg || '操作失败，请重试',
+        icon: 'none',
+      })
+    }
   }
 
   return (
@@ -56,9 +90,19 @@ export default function DonateModal(props: DonateModalProps) {
 
         {/* 卡片正面 (翻转后显示) */}
         <View className='card-face card-front'>
-          {cardInfo?.title && <Text className='card-title'>{cardInfo.title}</Text>}
-          {cardInfo?.description && <Text className='card-content'>{cardInfo.description}</Text>}
-          {cardInfo?.explanation && <Text className='card-source'>—— {cardInfo.explanation}</Text>}
+          {allCollected ? (
+            <>
+              <Text className='card-title'>🎉 恭喜</Text>
+              <Text className='card-content'>您已集齐所有佛理卡片！</Text>
+              <Text className='card-source'>功德圆满</Text>
+            </>
+          ) : (
+            <>
+              {cardInfo?.title && <Text className='card-title'>{cardInfo.title}</Text>}
+              {cardInfo?.description && <Text className='card-content'>{cardInfo.description}</Text>}
+              {cardInfo?.explanation && <Text className='card-source'>—— {cardInfo.explanation}</Text>}
+            </>
+          )}
         </View>
       </View>
     </View>

@@ -3,11 +3,11 @@ import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import './index.scss'
 import fishPng from '../../imgs/fish.png'
-import { syncMerit, SettingData } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal' // 引入弹窗
 import DonateModal from '../../components/DonateModal'
-import { poolMap } from '../../config/poolMap'
+import { getPoolCapacity } from '../../config/poolMap'
 import GalleryModal from '../../components/GalleryModal'
 import SettingModal from '../../components/SettingModal'
 
@@ -40,6 +40,7 @@ export default function Index() {
   const [stage, setStage] = useState<ComboStage>('normal')
   const [userInfo, setUserInfo] = useState<any>(null)
   const [setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
+  const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
   
   // 不同连击阶段的音效
   const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext | null>>({
@@ -89,15 +90,32 @@ export default function Index() {
 
   // 初始化
   const init = async () => {
-    const { user, setting: settingData } = await ensureLogin() // 确保已登录，返回用户ID
-    setUserInfo(user)
-    setMeritPoolMax(poolMap[user.pool_level])
-    setMerit(Number(user.current_merit))
-    setSetting(settingData)
+    try {
+      // 1. 先确保登录（获取 token）
+      await ensureLogin()
+      
+      // 2. 每次都从服务器获取最新用户数据
+      const freshUser = await getUserInfo()
+      setUserInfo(freshUser)
+      setMeritPoolMax(getPoolCapacity(freshUser.pool_level))
+      setMerit(Number(freshUser.current_merit))
+      
+      // 更新缓存
+      Taro.setStorageSync('userInfo', freshUser)
+      
+      // 3. 获取最新设置
+      const settingInfo = await getSetting()
+      setSetting(settingInfo)
+      
+      // 4. 检查是否已集齐所有佛理图鉴
+      const galleryRes = await getUserGalleryList()
+      setAllCollected(galleryRes.ownedNum === galleryRes.total)
+    } catch (err) {
+      console.error('初始化失败:', err)
+    }
   }
   
   useDidShow(() => {
-    console.log('Page shown.')
     init()
   })
 
@@ -108,10 +126,9 @@ export default function Index() {
     const increment = pendingMerit.current;
     pendingMerit.current = 0; // 立即清零，防止重复同步
 
-    // 发送请求
-    syncMerit({ increment, openid: userInfo.openid }).then((res: any) => {
+    // 发送请求（token 会自动从 header 带上）
+    syncMerit(increment).then((res: any) => {
       console.log('功德同步成功', res);
-      // 可以选择是否用后端返回的 merit 覆盖本地，为了体验流畅通常不覆盖，除非误差太大
     }).catch(err => {
       console.error('功德同步失败', err);
       // 失败了把功德加回去，下次再试
@@ -247,7 +264,7 @@ export default function Index() {
           功德+{item.meritAdd}
         </Text>
       ))}
-      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} />
+      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
       <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
       <SettingModal 

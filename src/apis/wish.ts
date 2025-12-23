@@ -1,16 +1,16 @@
 import { get, post } from '../utils/request'
 
-// 许愿
-export const createWish = (params:{content: string, user_id: number, merit_cost: number}) => {
+// 许愿（token 自动从 header 带上）
+export const createWish = (params: { content: string, merit_cost: number }) => {
   return post('/wish/create', params)
 }
 
-// 获取用户愿望
-export const getUserWishes = (user_id: number) => {
-  return get('/wish/getUserWishes', { user_id })
+// 获取用户愿望（token 自动从 header 带上）
+export const getUserWishes = () => {
+  return get('/wish/getUserWishes')
 }
 
-// 还愿
-export const fulfillWish = (params:{user_id: number, id: number, merit_cost: number}) => {
-  return post('/wish/fulfillWish', params)
+// 还愿（token 自动从 header 带上）
+export const fulfillWish = (wish_id: number) => {
+  return post('/wish/fulfillWish', { wish_id })
 }

@@ -10,9 +10,10 @@ export default function Beings() {
   const [personalMerit, setPersonalMerit] = useState<number>(0);
   const init = async () => {
     const globalRes = await getAllMerit()
-    setGlobalMerit(globalRes.stat_value)
-    const personalRes = await getUserInfo(Taro.getStorageSync('token'))
-    setPersonalMerit(personalRes.total_merit)
+    setGlobalMerit(globalRes?.stat_value ?? 0)
+    // token 会自动从 header 带上
+    const personalRes = await getUserInfo()
+    setPersonalMerit(personalRes?.total_merit ?? 0)
   }
   useDidShow(() => {
     init()

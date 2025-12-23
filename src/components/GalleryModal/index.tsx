@@ -15,7 +15,8 @@ export default function GalleryModal({ show, onClose }: GalleryModalProps) {
     const [selectedCard, setSelectedCard] = useState<any>(null); // 当前选中的卡片
 
     const init = async() => {
-        const res = await getUserGalleryList(Number(Taro.getStorageSync('token')))
+        // token 自动从 header 带上
+        const res = await getUserGalleryList()
         setGalleryList(res.list)
         setTotal(res.total)
         setOwnedNum(res.ownedNum)

@@ -1,9 +1,11 @@
 import { post } from '../utils/request'
 
-export const getGalleryList = (user_id: number) => {
-  return post('/userGallery/getGalleryList', { user_id })
+// 抽取佛理卡片（token 自动从 header 带上）
+export const getGalleryList = () => {
+  return post('/userGallery/getGalleryList')
 }
 
-export const getUserGalleryList = (user_id: number) => {
-  return post('/userGallery/getUserGalleryList', { user_id })
+// 获取用户图鉴列表（token 自动从 header 带上）
+export const getUserGalleryList = () => {
+  return post('/userGallery/getUserGalleryList')
 }

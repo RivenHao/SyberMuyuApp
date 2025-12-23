@@ -3,31 +3,52 @@ import Taro, { useDidShow } from "@tarojs/taro";
 
 import { View, Text, Swiper, SwiperItem } from "@tarojs/components";
 import './index.scss';
-import { fulfillWish, getUserWishes } from "../../apis";
+import { fulfillWish, getUserWishes, getUserInfo } from "../../apis";
 
-export default function Beings() {
+export default function Fulfill() {
   const [wishList, setWishList] = useState<any[]>([])
+  const [currentMerit, setCurrentMerit] = useState<number>(0)
+  
   const init = async () => {
-    const res = await getUserWishes(Taro.getStorageSync('token'))
-    console.log(res)
+    // 获取用户当前功德
+    const userInfo = await getUserInfo()
+    setCurrentMerit(Number(userInfo.current_merit))
+    
+    // 获取愿望列表
+    const res = await getUserWishes()
     setWishList(res)
   }
+  
   useDidShow(() => {
     init()
   })
+  
   const handleFulfill = (item: any) => {
-    console.log(item)
+    // 前端先校验功德是否足够
+    if (currentMerit < item.merit_cost) {
+      Taro.showToast({
+        title: `功德不足，还需 ${item.merit_cost - currentMerit} 功德`,
+        icon: 'none',
+      })
+      return
+    }
+    
     Taro.showModal({
       title: '还愿',
-      content: `确认后将消耗${item.merit_cost}功德进行还原，是否继续？`,
+      content: `确认后将消耗${item.merit_cost}功德进行还愿，是否继续？\n当前功德：${currentMerit}`,
       success: async (res) => {
         if (res.confirm) {
-          await fulfillWish({ user_id: item.user_id, id: item.id, merit_cost: item.merit_cost })
-          Taro.showToast({
-            title: '还愿成功',
-            icon: 'success',
-          })
-          await init()
+          try {
+            await fulfillWish(item.id)
+            Taro.showToast({
+              title: '还愿成功',
+              icon: 'success',
+            })
+            await init()
+          } catch (err) {
+            // 后端也会校验，这里捕获错误
+            console.error('还愿失败:', err)
+          }
         }
       }
     })
