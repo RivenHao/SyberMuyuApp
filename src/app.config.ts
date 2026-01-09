@@ -3,7 +3,8 @@ export default defineAppConfig({
     'pages/index/index',
     'pages/wish/index',
     'pages/beings/index',
-    'pages/fulfill/index'
+    'pages/fulfill/index',
+    'pages/tip/index'
   ],
   window: {
     backgroundTextStyle: 'light',

@@ -1,27 +1,28 @@
-// 功德池等级对应的最大功德值（与后端保持一致）
-// 后端: server/src/controllers/user.controller.js POOL_CAPACITIES
-export const poolMap: Record<number, number> = {
-  0: 10,
-  1: 20,
-  2: 30,
-  // 3: 1000,
-  // 4: 2000,
-  // 5: 3000,
-  // 6: 4000,
-  // 7: 5000,
+// 默认功德池容量配置（后期上线可改回此值）
+export const DEFAULT_POOL_CAPACITIES = [10, 20, 30, 40, 50, 60, 70, 80]
+
+// 根据容量数组获取最大等级
+export const getMaxPoolLevel = (capacities: number[] = DEFAULT_POOL_CAPACITIES): number => {
+  return capacities.length - 1
 }
 
-// 最大池子等级（共8级，索引0-7）
-export const MAX_POOL_LEVEL = Object.keys(poolMap).length - 1
-
-// 最大池子容量
-export const MAX_POOL_CAPACITY = poolMap[MAX_POOL_LEVEL]
+// 根据容量数组获取最大容量
+export const getMaxPoolCapacity = (capacities: number[] = DEFAULT_POOL_CAPACITIES): number => {
+  return capacities[capacities.length - 1] ?? DEFAULT_POOL_CAPACITIES[DEFAULT_POOL_CAPACITIES.length - 1]
+}
 
 // 获取池子容量（处理超出范围的情况）
-export const getPoolCapacity = (level: number): number => {
+// capacities: 从服务端获取的容量数组，默认使用 DEFAULT_POOL_CAPACITIES
+export const getPoolCapacity = (level: number, capacities: number[] = DEFAULT_POOL_CAPACITIES): number => {
+  const maxLevel = capacities.length - 1
   // 如果等级超出范围，返回最大容量
-  if (level >= MAX_POOL_LEVEL) {
-    return MAX_POOL_CAPACITY
+  if (level >= maxLevel) {
+    return capacities[maxLevel]
   }
-  return poolMap[level] ?? MAX_POOL_CAPACITY
+  return capacities[level] ?? capacities[maxLevel]
+}
+
+// 检查是否已达到最大等级
+export const isMaxPoolLevel = (level: number, capacities: number[] = DEFAULT_POOL_CAPACITIES): boolean => {
+  return level >= capacities.length - 1
 }

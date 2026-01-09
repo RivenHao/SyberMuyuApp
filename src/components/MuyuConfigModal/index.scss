@@ -1,0 +1,135 @@
+.muyu-config-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.config-content {
+  width: 90%;
+  max-height: 85%;
+  background: linear-gradient(135deg, #2a2a3e 0%, #1a1a2e 100%);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ffd700;
+  text-align: center;
+  margin-bottom: 20rpx;
+}
+
+.config-scroll {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 800rpx;
+}
+
+.config-section {
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  color: #ffa500;
+  margin-bottom: 16rpx;
+  display: block;
+  font-weight: bold;
+}
+
+.config-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12rpx 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.item-label {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  flex-shrink: 0;
+}
+
+.item-input {
+  width: 180rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8rpx;
+  color: #fff;
+  font-size: 26rpx;
+  text-align: center;
+  padding: 0 10rpx;
+
+  &.wide {
+    width: 280rpx;
+    text-align: left;
+  }
+}
+
+.config-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20rpx;
+  padding-top: 20rpx;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.btn-reset {
+  flex: 1;
+  margin-right: 20rpx;
+  height: 70rpx;
+  line-height: 70rpx;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 28rpx;
+  border-radius: 35rpx;
+  border: none;
+
+  &::after {
+    border: none;
+  }
+}
+
+.btn-save {
+  flex: 1;
+  height: 70rpx;
+  line-height: 70rpx;
+  background: linear-gradient(135deg, #ffd700 0%, #ffa500 100%);
+  color: #1a1a2e;
+  font-size: 28rpx;
+  font-weight: bold;
+  border-radius: 35rpx;
+  border: none;
+
+  &::after {
+    border: none;
+  }
+}
+
+.config-close {
+  margin-top: 20rpx;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 26rpx;
+  padding: 10rpx;
+}
+

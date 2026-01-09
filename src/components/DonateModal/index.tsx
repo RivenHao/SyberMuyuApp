@@ -5,17 +5,18 @@ import { View, Text } from "@tarojs/components";
 import './index.scss'
 import { getGalleryList, decreaseMerit, increasePoolLevel } from "../../apis";
 import { UserInfo } from "../../apis/type";
-import { getPoolCapacity, MAX_POOL_LEVEL } from "../../config/poolMap";
+import { getPoolCapacity, isMaxPoolLevel, DEFAULT_POOL_CAPACITIES } from "../../config/poolMap";
 
 interface DonateModalProps {
   show: boolean
   onClose: () => void
   userInfo: UserInfo
   onRefresh: () => void
+  poolCapacities?: number[] // 从父组件传入服务端配置的容量数组
 }
 
 export default function DonateModal(props: DonateModalProps) {
-  const { show, onClose, userInfo, onRefresh } = props
+  const { show, onClose, userInfo, onRefresh, poolCapacities = DEFAULT_POOL_CAPACITIES } = props
   const [isFlipped, setIsFlipped] = useState(false)
   const [cardInfo, setCardInfo] = useState<any>(null)
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有卡片
@@ -49,22 +50,15 @@ export default function DonateModal(props: DonateModalProps) {
         setCardInfo(cardRes)
         setAllCollected(false)
       }
-      
-      // 2. 减少功德（使用当前池子容量）
-      const meritCost = getPoolCapacity(userInfo.pool_level ?? 0)
+      // 2. 减少功德（使用当前池子容量，从服务端配置获取）
+      const meritCost = getPoolCapacity(userInfo.pool_level ?? 0, poolCapacities)
       await decreaseMerit(meritCost)
       
-      // 3. 扩充容量（检查是否已达上限）
+      // 3. 扩充容量（检查是否已达上限，使用服务端配置）
       const currentLevel = userInfo.pool_level ?? 0
-      if (currentLevel < MAX_POOL_LEVEL) {
+      if (!isMaxPoolLevel(currentLevel, poolCapacities)) {
         await increasePoolLevel()
-      } 
-      // else {
-      //   Taro.showToast({
-      //     title: '功德池已达最大容量',
-      //     icon: 'none',
-      //   })
-      // }
+      }
       
       onRefresh()
     } catch (err: any) {

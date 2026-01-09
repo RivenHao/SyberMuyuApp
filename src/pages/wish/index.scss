@@ -1,49 +1,144 @@
 .index-page {
   position: relative;
   height: 100vh;
-  background-color: #000; // 黑色背景
+  background-color: #0D132C; 
   overflow: hidden;
   box-sizing: border-box;
-}
-.back-btn{
-  position: absolute;
-  top: 6%;
-  left: 5%;
-  color: #fff;
-  font-size: 28rpx;
-  font-weight: bold;
-}
-.wish-textarea-container{
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  border: 1px solid #fff;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  .wish-textarea{
-    border: 1px solid #fff;
-    background: #fff;
-  }
+  justify-content: center;
+  overflow: hidden;
 }
-.wish-button{
-  width: 60%;
-  height: 100rpx;
-  background: #fff;
-  position: fixed;
-  bottom: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  text-align: center;
-  line-height: 100rpx;
+.wish-bg-circle{
+  width: 200vw;
+  height: 98.9vh;
+  position: absolute;
+  top: -8vh;
+  pointer-events: none;
 }
 .wish-title{
   position: absolute;
   top: 6%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .wish-title-icon{
+    width: 64rpx;
+    height: 64rpx;
+  }
+  .wish-title-text{
+    color: #fff;
+    font-size: 32rpx;
+  }
+}
+.wish-textarea-container{
+  width: 84.52vw;
+  height: 39.66vh;
+  background: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wishPaper.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  padding-top: 110rpx;
+  padding-left: 30rpx;
+  .wish-textarea{
+    height: 90%;
+  }
+  .wish-textarea-count{
+    font-size: 24rpx;
+    color: #808080;
+    position: absolute;
+    bottom: 28rpx;
+    right: 32rpx;
+  }
+}
+
+.wish-button-container{
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  .wish-button{
+    margin-top: 104rpx;
+    width: 60.8vw;
+    height: 6.16vh;
+    background: radial-gradient(50% 50% at 50% 50%, #CCBF78 0%, #C2AD3D 100%);
+    text-align: center;
+    line-height: 6.16vh;
+    border-radius: 20rpx;
+    color: #fff;
+  }
+  .wish-button-text{
+    font-size: 28rpx;
+    color: #C7C099;
+    margin-top: 24rpx;
+  }
+}
+
+// 许愿弹窗
+.wish-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.wish-modal-content {
+  position: relative;
+  background: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/modal-bg.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  width: 622rpx;
+  height: 720rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.wish-modal-image {
+  width: 338rpx;
+  height: 56rpx;
+  margin-top: 64rpx;
+}
+
+.wish-modal-text {
+  margin-top: 110rpx;
+  font-size: 32rpx;
+  color: #000;
+  text-align: center;
+}
+
+.wish-modal-buttons {
+  position: absolute;
+  bottom: 68rpx;
+  display: flex;
+  flex-direction: column;
+}
+
+.wish-modal-btn {
+  width: 464rpx;
+  height: 100rpx;
+  border-radius: 20rpx;
+  font-size: 32rpx;
+  line-height: 100rpx;
+}
+
+.wish-modal-btn-confirm {
+  background: radial-gradient(50% 50% at 50% 50%, #CCBF78 0%, #C2AD3D 100%);
   color: #fff;
-  font-size: 40rpx;
-  font-weight: bold;
+}
+
+.wish-modal-btn-cancel {
+  margin-top: 24rpx;
+  border: 2rpx solid #C2AD3E;
+  background: transparent;
+  color: #B59F30;
 }

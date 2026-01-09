@@ -1,0 +1,47 @@
+.index-page {
+    position: relative;
+    height: 100vh;
+    background-color: #0D132C;
+    overflow: hidden;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.tip-bg-circle {
+    width: 165.33vw;
+    height: 98.9vh;
+    position: absolute;
+    top: 12.07vh;
+    pointer-events: none;
+}
+
+.tip-content {
+    width: 660rpx;
+    height: 354rpx;
+    background: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wishMail.png');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    position: relative;
+    .tip-content-text {
+        position: absolute;
+        top: 76rpx;
+        left: 150rpx;
+        font-size: 36rpx;
+    }
+}
+
+.tip-button {
+    width: 72.26vw;
+    height: 6.16vh;
+    background: #fff;
+    border-radius: 20rpx;
+    font-size: 32rpx;
+    text-align: center;
+    line-height: 6.16vh;
+    margin-top: 8.37vh;
+}

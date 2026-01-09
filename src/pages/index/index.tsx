@@ -2,22 +2,40 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import './index.scss'
-import fishPng from '../../imgs/fish.png'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, getMuyuConfig, MuyuConfigData } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
-import WishModal from '../../components/WishModal' // 引入弹窗
+import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
-import { getPoolCapacity } from '../../config/poolMap'
 import GalleryModal from '../../components/GalleryModal'
 import SettingModal from '../../components/SettingModal'
+import MuyuConfigModal from '../../components/MuyuConfigModal'
 import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanvas'
+import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
 
 import normalSound from '../../audios/normal.mp3'
 import blueSound from '../../audios/blue.mp3'
 import redSound from '../../audios/red.mp3'
 import orangeSound from '../../audios/orange.mp3'
-// 定义连击阶段类型
-type ComboStage = 'normal' | 'blue' | 'red' | 'orange';
+
+// 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
+const MUYU_IMGS = {
+  body: {
+    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-1.png',
+    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-2.png',
+    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-3.png',
+    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-4.png',
+    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-5.png',
+  },
+  parts: {
+    bottom: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-bottom.png',
+    center: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-center.png',
+    front: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-front.png',
+    top: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-top.png',
+  }
+}
+
+// 定义连击阶段类型 (1-5)
+type ComboStage = 1 | 2 | 3 | 4 | 5;
 
 export default function Index() {
   const [merit, setMerit] = useState(0)
@@ -27,40 +45,43 @@ export default function Index() {
   const [showDonateModal, setShowDonateModal] = useState(false)
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [showSettingModal, setShowSettingModal] = useState(false)
+  const [showMuyuConfigModal, setShowMuyuConfigModal] = useState(false)
+  const [muyuConfig, setMuyuConfig] = useState<MuyuConfigData>(DEFAULT_MUYU_CONFIG)
   const lastTapTime = useRef<number>(0)
   const comboCount = useRef<number>(0) // 连击计数器
   const pendingMerit = useRef<number>(0) // 待同步的功德
   const syncTimer = useRef<any>(null) // 同步定时器
-  const [stage, setStage] = useState<ComboStage>('normal')
+  const [stage, setStage] = useState<ComboStage>(1) // 默认为阶段 1
   const [userInfo, setUserInfo] = useState<any>(null)
   const [setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
+  const [immersiveHidden, setImmersiveHidden] = useState(false) // 沉浸模式是否隐藏UI
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
+  const tapCount = useRef<number>(0) // 累计敲击次数（沉浸模式用）
+  const immersiveTimer = useRef<any>(null) // 沉浸模式恢复定时器
   
   // 粒子效果相关
   const particleRef = useRef<ParticleCanvasRef>(null)
   const poolTarget = useRef({ x: 200, y: 100 }) // 功德池目标位置
   const muyuPos = useRef({ x: 200, y: 400 }) // 木鱼位置
 
-  // 不同连击阶段的音效
+  // 不同连击阶段的音效上下文
   const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext | null>>({
-    normal: null,
-    blue: null,
-    red: null,
-    orange: null
+    1: null, 2: null, 3: null, 4: null, 5: null
   })
 
-  // 音效资源配置
+  // 音效资源配置映射
   const SOUND_URLS: Record<ComboStage, string> = {
-    normal: normalSound,  // 基础木鱼声
-    blue: blueSound,    // 清脆铃声
-    red: redSound,     // 深沉钟声
-    orange: orangeSound   // 悠扬禅钟
+    1: normalSound,
+    2: blueSound,
+    3: redSound,
+    4: orangeSound,
+    5: orangeSound // 复用
   }
 
   // 初始化音频
   useEffect(() => {
-    // 创建4个音频实例
-    const stageList: ComboStage[] = ['normal', 'blue', 'red', 'orange']
+    // 创建5个音频实例
+    const stageList: ComboStage[] = [1, 2, 3, 4, 5]
     const ctxMap = audioContexts.current
     
     stageList.forEach(s => {
@@ -87,26 +108,40 @@ export default function Index() {
     ctx.play()
   }
 
+  // 根据配置获取功德池容量
+  const getPoolCapacity = (level: number, config: MuyuConfigData): number => {
+    const capacities = config.pool_capacities
+    if (level >= capacities.length) {
+      return capacities[capacities.length - 1]
+    }
+    return capacities[level] ?? capacities[capacities.length - 1]
+  }
+
   // 初始化
   const init = async () => {
     try {
-      // 1. 先确保登录（获取 token）
       await ensureLogin()
       
-      // 2. 每次都从服务器获取最新用户数据
+      let config = DEFAULT_MUYU_CONFIG
+      if (USE_SERVER_CONFIG) {
+        try {
+          config = await getMuyuConfig()
+          setMuyuConfig(config)
+        } catch (err) {
+          console.error('获取木鱼配置失败，使用默认配置:', err)
+        }
+      }
+      
       const freshUser = await getUserInfo()
       setUserInfo(freshUser)
-      setMeritPoolMax(getPoolCapacity(freshUser.pool_level))
+      setMeritPoolMax(getPoolCapacity(freshUser.pool_level, config))
       setMerit(Number(freshUser.current_merit))
       
-      // 更新缓存
       Taro.setStorageSync('userInfo', freshUser)
       
-      // 3. 获取最新设置
       const settingInfo = await getSetting()
       setSetting(settingInfo)
       
-      // 4. 检查是否已集齐所有佛理图鉴
       const galleryRes = await getUserGalleryList()
       setAllCollected(galleryRes.ownedNum === galleryRes.total)
     } catch (err) {
@@ -116,24 +151,21 @@ export default function Index() {
   
   useDidShow(() => {
     init()
-    // 获取功德池和木鱼的位置
     setTimeout(() => {
       const query = Taro.createSelectorQuery()
       query.select('.merit-pool-container').boundingClientRect()
       query.select('.muyu-container').boundingClientRect()
       query.exec((res) => {
         if (res[0]) {
-          // 功德池中心位置
           poolTarget.current = {
             x: res[0].left + res[0].width / 2,
             y: res[0].top + res[0].height / 2
           }
         }
         if (res[1]) {
-          // 木鱼中心位置
           muyuPos.current = {
             x: res[1].left + res[1].width / 2,
-            y: res[1].top + res[1].height / 3 // 偏上一点
+            y: res[1].top + res[1].height / 3 
           }
         }
       })
@@ -145,21 +177,18 @@ export default function Index() {
     if (pendingMerit.current <= 0) return;
 
     const increment = pendingMerit.current;
-    pendingMerit.current = 0; // 立即清零，防止重复同步
+    pendingMerit.current = 0; 
 
-    // 发送请求（token 会自动从 header 带上）
     syncMerit(increment).then((res: any) => {
       console.log('功德同步成功', res);
     }).catch(err => {
       console.error('功德同步失败', err);
-      // 失败了把功德加回去，下次再试
       pendingMerit.current += increment;
     });
   }
 
   // 祈愿
   const handleWish = () => {
-    console.log('祈愿')
     if (merit >= meritPoolMax) {
       setShowModal(true)
     } else {
@@ -173,7 +202,6 @@ export default function Index() {
 
   // 捐香火
   const handleDonate = async () => {
-    console.log('捐香火')
     setShowModal(false)
     setShowDonateModal(true)
   }
@@ -183,59 +211,82 @@ export default function Index() {
     const now = Date.now();
     const interval = now - lastTapTime.current;
     
-    // --- 连击逻辑 ---
-    // 第一次点击，视为连击开始
+    const { combo_interval_min, combo_interval_max } = muyuConfig;
+    
     if (lastTapTime.current === 0) {
       comboCount.current = 1;
       if (setting.vibration) Taro.vibrateShort({ type: 'light' });
     } else {
-      if (interval >= 750 && interval <= 1500) {
-        // 命中节奏 -> 连击 +1
+      if (interval >= combo_interval_min && interval <= combo_interval_max) {
         comboCount.current += 1;
         if (setting.vibration) Taro.vibrateShort({ type: 'medium' });
       } else {
-        // 节奏中断 -> 重置为 1
         comboCount.current = 1;
-        setStage('normal');
+        setStage(1); // 重置为阶段 1
         if (setting.vibration) Taro.vibrateShort({ type: 'light' });
       }
     }
     lastTapTime.current = now;
 
     // --- 计算阶段颜色和加分 ---
-    let meritAdd = 1; // 默认 +1
-    let currentStage: ComboStage = 'normal';
+    const { 
+      blue_combo, red_combo, orange_combo, purple_combo, 
+      normal_merit, blue_merit, red_merit, orange_merit, purple_merit
+    } = muyuConfig;
+
+    let meritAdd = normal_merit;
+    let currentStage: ComboStage = 1;
     const c = comboCount.current;
     
-    if (c >= 15) {
-      currentStage = 'orange';
-      meritAdd = 4;
-    } else if (c >= 10) {
-      currentStage = 'red';
-      meritAdd = 3;
-    } else if (c >= 5) {
-      currentStage = 'blue';
-      meritAdd = 2;
+    if (c >= purple_combo) {
+      currentStage = 5;
+      meritAdd = purple_merit;
+    } else if (c >= orange_combo) {
+      currentStage = 4;
+      meritAdd = orange_merit;
+    } else if (c >= red_combo) {
+      currentStage = 3;
+      meritAdd = red_merit;
+    } else if (c >= blue_combo) {
+      currentStage = 2;
+      meritAdd = blue_merit;
+    } else {
+      currentStage = 1;
+      meritAdd = normal_merit;
     }
     
     setStage(currentStage);
     
-    // 播放对应阶段的音效
+    // 沉浸模式逻辑
+    const { immersive_tap_count, immersive_timeout } = muyuConfig;
+    if (setting.immersive_mode) {
+      tapCount.current += 1;
+      if (tapCount.current >= immersive_tap_count) {
+        setImmersiveHidden(true);
+      }
+      if (immersiveTimer.current) {
+        clearTimeout(immersiveTimer.current);
+      }
+      immersiveTimer.current = setTimeout(() => {
+        setImmersiveHidden(false);
+        tapCount.current = 0;
+      }, immersive_timeout);
+    }
+    
     playTapSound(currentStage)
 
-    // 动画
     setIsAnimate(true)
     setTimeout(() => setIsAnimate(false), 100)
 
-    // 发射粒子效果，粒子到达后再更新进度
+    // 粒子颜色映射
     const colors: Record<ComboStage, string> = {
-      normal: '#ffffff',
-      blue: '#4fc3f7',
-      red: '#ff5252',
-      orange: '#ffb74d'
+      1: '#ffffff',
+      2: '#83d9ff', // 蓝青
+      3: '#80ffff', // 黄绿
+      4: '#ffb04e', // 橙黄
+      5: '#ff7c4b'  // 红橙
     }
     
-    // 保存当前要加的值（闭包）
     const addValue = meritAdd
     
     particleRef.current?.emit(
@@ -245,19 +296,16 @@ export default function Index() {
       poolTarget.current.y,
       `功德+${meritAdd}`,
       colors[currentStage],
-      // 粒子到达后的回调：更新进度
       () => {
         setMerit(prev => prev + addValue)
         pendingMerit.current += addValue
         
-        // 重置/启动防抖定时器
         if (syncTimer.current) clearTimeout(syncTimer.current)
         syncTimer.current = setTimeout(syncMeritToBackend, 1000)
       }
     )
   }
 
-  // 页面卸载时强制同步一次
   useEffect(() => {
     return () => {
       if (syncTimer.current) clearTimeout(syncTimer.current);
@@ -267,35 +315,97 @@ export default function Index() {
 
   return (
     <View className='index-page'>
-      <View className='navbar'>
-        <View className='navbar-item' onClick={() => setShowSettingModal(true)}>设置</View>
-        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/fulfill/index' })}>还愿</View>
-        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/beings/index' })}>众生</View>
-        <View className='navbar-item' onClick={() => setShowGalleryModal(true)}>佛理图鉴</View>
-      </View>
-
-      <View className='merit-pool-container' onClick={handleWish}>
-        <Text className='merit-pool-title'>
-          { merit >= meritPoolMax ? '功德池已满，可祈愿' : '功德池' }</Text>
-        <View className='merit-pool'>
-          <View className='merit-pool-current' style={{ width: `${merit >= meritPoolMax ? 100 : (merit / meritPoolMax) * 100}%` }} />
-          <Text> { merit } / { meritPoolMax } </Text>
+      <View 
+        className={`navbar ${immersiveHidden ? 'immersive-hidden' : ''}`}
+      >
+        <View className='navbar-item' onClick={() => setShowSettingModal(true)}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/set.png' style={{ width:'76rpx', height:'62rpx' }} />
+        </View>
+        <View className='navbar-item' onClick={() => setShowGalleryModal(true)}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/catalog.png' style={{ width:'74rpx', height:'62rpx' }} />
+        </View>
+        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/fulfill/index' })}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/fulfill.png' style={{ width:'90rpx', height:'62rpx' }} />
+        </View>
+        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/beings/index' })}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/living.png' style={{ width:'90rpx', height:'62rpx' }} />
+        </View>
+        <View className='navbar-item' onClick={() => setShowMuyuConfigModal(true)}>
+          配置
         </View>
       </View>
-      <View className={`muyu-container ${stage}`} onClick={handleTap}>
-        <Image src={fishPng} className={`muyu-img ${isAnimate ? 'active' : ''}`} />
+
+      <View 
+        className='merit-pool-container'
+        onClick={handleWish}
+      >
+        <Text className='merit-pool-container-text'> { merit } / { meritPoolMax } </Text>
+        <View className='merit-pool' style={{ borderColor: merit >= meritPoolMax ? '#FDC74E' : '#454545' }}>
+          <View className='merit-pool-current' style={{ width: `${merit >= meritPoolMax ? 100 : (merit / meritPoolMax) * 100}%` }} />
+          { merit >= meritPoolMax && (
+            <Text className={`merit-pool-title ${immersiveHidden ? 'immersive-hidden' : ''}`}>池已满，点击祈愿</Text>
+          )
+        }
+        </View>
       </View>
       
-      {/* Canvas 粒子效果层 */}
+      {/* 木鱼容器：动态添加 stage 类名 */}
+      <View className={`muyu-container stage-${stage}`} onClick={handleTap}>
+        {/* 底层：木鱼主体（预加载所有阶段，通过 opacity 切换，防止闪烁） */}
+        {Object.keys(MUYU_IMGS.body).map((key, index) => {
+          const imgStage = index + 1;
+          // key 是 s1, s2... index 是 0, 1...
+          // 我们需要判断当前 stage 是否匹配
+          const isCurrent = stage === imgStage;
+          return (
+            <Image 
+              key={key}
+              src={MUYU_IMGS.body[key as keyof typeof MUYU_IMGS.body]} 
+              className={`muyu-img layer-base ${isCurrent ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+            />
+          )
+        })}
+        
+        {/* 发光部件层（预加载，通过 opacity 切换） */}
+        <Image 
+          src={MUYU_IMGS.parts.bottom} 
+          className={`muyu-img layer-light light-bottom ${stage >= 2 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+        />
+        <Image 
+          src={MUYU_IMGS.parts.center} 
+          className={`muyu-img layer-light light-center ${stage >= 3 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+        />
+        <Image 
+          src={MUYU_IMGS.parts.front} 
+          className={`muyu-img layer-light light-front ${stage >= 4 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+        />
+        <Image 
+          src={MUYU_IMGS.parts.top} 
+          className={`muyu-img layer-light light-top ${stage >= 5 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+        />
+      </View>
+      
       <ParticleCanvas ref={particleRef} />
       <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
-      <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} />
+      <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} poolCapacities={muyuConfig.pool_capacities} />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
       <SettingModal 
         show={showSettingModal} 
         onClose={() => setShowSettingModal(false)} 
         onSettingChange={setSetting}
       />
+      {USE_SERVER_CONFIG && (
+        <MuyuConfigModal
+          show={showMuyuConfigModal}
+          onClose={() => setShowMuyuConfigModal(false)}
+          onConfigChange={(newConfig) => {
+            setMuyuConfig(newConfig)
+            if (userInfo) {
+              setMeritPoolMax(getPoolCapacity(userInfo.pool_level, newConfig))
+            }
+          }}
+        />
+      )}
     </View>
   )
 }

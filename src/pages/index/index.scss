@@ -6,25 +6,36 @@
   box-sizing: border-box;
 }
 
+// ========== 沉浸模式隐藏样式 ==========
+.immersive-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 0.8s ease !important;
+}
+
 .navbar {
   width: 100%;
   height: 60rpx;
-  border: 1px solid #fff;
   position: absolute;
   top: 6%;
   display: flex;
   justify-content: center;
   align-items: center;
   color: #fff;
-
+  opacity: 1;
+  transition: opacity 0.8s ease; // 沉浸模式过渡
+  justify-content: flex-start;
   .navbar-item {
     margin: 0 20rpx;
+    
+    // 配置按钮特殊样式（测试阶段）
+    &.config-btn {
+      color: #ffd700;
+    }
   }
 }
 
 .merit-pool-container {
-  width: 60%;
-  height: 80rpx;
   position: absolute;
   top: 200rpx;
   left: 50%;
@@ -33,12 +44,25 @@
   font-weight: bold;
   text-align: center;
   font-size: 36rpx;
+  .merit-pool-container-text {
+    font-size: 24rpx;
+    color: #CEF7FF;
+  }
+}
+
+.merit-pool-title {
+  font-size: 26rpx;
+  color: #000000;
+  opacity: 1;
+  transition: opacity 0.8s ease;
 }
 
 .merit-pool {
-  border: 1px solid #fff;
+  width: 622rpx;
+  height: 84rpx;
+  border: 2rpx solid;
   line-height: 80rpx;
-  border-radius: 10rpx;
+  border-radius: 24rpx;
   margin-top: 10rpx;
   background-color: transparent;
   overflow: hidden;
@@ -49,7 +73,8 @@
     top: 0;
     left: 0;
     height: 100%;
-    background-color: #18ace7; // 蓝色进度条
+    border-radius: 24rpx;
+    background: linear-gradient(270deg, #FFC548 0%, #D0F2C5 100%);
     transition: width 0.3s ease;
     z-index: 1; // 在下层
   }
@@ -63,52 +88,161 @@
   }
 }
 
+// ========== 木鱼容器 (分层结构) ==========
 .muyu-container {
   position: absolute;
   top: 80%;
   left: 50%;
   transform: translate(-50%, -50%); // 居中定位
-  border-radius: 50%;
   width: 500rpx;
   height: 500rpx;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  
+  display: block; 
+  // overflow: hidden; // 移除 hidden，防止遮挡光晕
 
-  // 蓝色阶段 (Blue)
-  &.blue {
-    box-shadow: 0 0 60rpx rgba(24, 144, 255, 0.6), inset 0 0 30rpx rgba(24, 144, 255, 0.3);
-    border-color: rgba(24, 144, 255, 0.5);
-    animation: breathe-blue 2s infinite ease-in-out;
-  }
-
-  // 红色阶段 (Red)
-  &.red {
-    box-shadow: 0 0 80rpx rgba(255, 77, 79, 0.7), inset 0 0 40rpx rgba(255, 77, 79, 0.4);
-    border-color: rgba(255, 77, 79, 0.6);
-    animation: breathe-red 1.5s infinite ease-in-out;
-  }
-
-  // 橙色阶段 (Orange - 暴走模式)
-  &.orange {
-    box-shadow: 0 0 100rpx rgba(255, 165, 0, 0.9), inset 0 0 50rpx rgba(255, 165, 0, 0.5);
-    border-color: rgba(255, 165, 0, 0.7);
-    animation: breathe-orange 1s infinite ease-in-out;
-  }
-
-  // 木鱼图片
+  // 通用图片样式
   .muyu-img {
-    width: 400rpx;
-    height: 300rpx;
-    transition: transform 0.1s ease; // 平滑过渡
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    
+    // 平滑过渡：transform 用于点击缩放，opacity 用于阶段切换
+    transition: transform 0.1s ease, opacity 0.3s ease; 
+    
+    opacity: 0; // 默认隐藏，通过 .show 显示
+
+    &.show {
+      opacity: 1;
+    }
 
     &.active {
-      transform: scale(0.95); // 点击时缩小
+      transform: scale(0.95);
     }
+  }
+
+  .layer-base {
+    z-index: 1;
+  }
+
+  .layer-light {
+    z-index: 2;
+    transform: none;
+    
+    &.active {
+      transform: scale(0.95);
+    }
+  }
+
+  // ========== 动画绑定 (所有阶段的动画一直运行，只通过 opacity 控制可见性) ==========
+  // 这样切换时动画是连贯的
+  
+  // Stage 5: 红橙色系 (包含所有层)
+  &.stage-5 {
+    .layer-base.show { animation: shell-stage5 3s ease-in-out infinite; }
+    .light-bottom { animation: light-s5-bottom 3s ease-in-out infinite; }
+    .light-center { animation: light-s5-center 3s ease-in-out infinite; }
+    .light-front  { animation: light-s5-front 3s ease-in-out infinite; }
+    .light-top    { animation: light-s5-top 3s ease-in-out infinite; }
+  }
+  
+  // 兼容其他 Stage
+  &.stage-4 {
+    .layer-base.show { animation: shell-stage4 3s ease-in-out infinite; }
+    .light-bottom { animation: light-s4-bottom 3s ease-in-out infinite; }
+    .light-center { animation: light-s4-center 3s ease-in-out infinite; }
+    .light-front  { animation: light-s4-front 3s ease-in-out infinite; }
+  }
+  &.stage-3 {
+    .layer-base.show { animation: shell-stage3 3s ease-in-out infinite; }
+    .light-bottom { animation: light-s3-bottom 3s ease-in-out infinite; }
+    .light-center { animation: light-s3-center 3s ease-in-out infinite; }
+  }
+  &.stage-2 {
+    .layer-base.show { animation: shell-stage2 3s ease-in-out infinite; }
+    .light-bottom { animation: light-s2-bottom 3s ease-in-out infinite; }
   }
 }
 
-// 漂浮文字 "功德+1"
+// ========== 动画关键帧 (Keyframes) - Filter 方案 ==========
+
+// Stage 2
+@keyframes shell-stage2 {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 20rpx #0b8eaf) drop-shadow(0 0 60rpx #0b8eaf); }
+}
+@keyframes light-s2-bottom {
+  // #88e1ff (Cyan-Blue)
+  0%, 100% { opacity: 0.2; filter: sepia(1) hue-rotate(150deg) saturate(3) drop-shadow(0 0 8rpx #88e1ff); }
+  50% { opacity: 1; filter: sepia(1) hue-rotate(150deg) saturate(3) drop-shadow(0 0 30rpx #88e1ff) drop-shadow(0 0 60rpx #88e1ff); }
+}
+
+// Stage 3
+@keyframes shell-stage3 {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 25rpx #bcbc3c) drop-shadow(0 0 68rpx #bcbc3c); }
+}
+@keyframes light-s3-bottom {
+  // #bcd474 (Yellow-Green)
+  0%, 100% { opacity: 0.2; filter: sepia(1) hue-rotate(60deg) saturate(3) drop-shadow(0 0 8rpx #bcd474); }
+  50% { opacity: 1; filter: sepia(1) hue-rotate(60deg) saturate(3) drop-shadow(0 0 30rpx #bcd474) drop-shadow(0 0 60rpx #bcd474); }
+}
+@keyframes light-s3-center {
+  // #c9ffdb (Light Green)
+  0%, 100% { opacity: 0.2; filter: sepia(1) hue-rotate(90deg) saturate(3) drop-shadow(0 0 8rpx #c9ffdb); }
+  50% { opacity: 1; filter: sepia(1) hue-rotate(90deg) saturate(3) drop-shadow(0 0 30rpx #c9ffdb) drop-shadow(0 0 60rpx #c9ffdb); }
+}
+
+// Stage 4
+@keyframes shell-stage4 {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 28rpx #ffb53e) drop-shadow(0 0 74rpx #ffb53e); }
+}
+@keyframes light-s4-bottom {
+  // #edd267 (Gold)
+  0%, 100% { opacity: 0.2; filter: sepia(1) hue-rotate(30deg) saturate(5) drop-shadow(0 0 8rpx #edd267); }
+  50% { opacity: 1; filter: sepia(1) hue-rotate(30deg) saturate(5) drop-shadow(0 0 30rpx #edd267) drop-shadow(0 0 60rpx #edd267); }
+}
+@keyframes light-s4-center {
+  // #e4ffa6 (Light Yellow)
+  0%, 100% { opacity: 0.2; filter: sepia(1) hue-rotate(50deg) saturate(3) drop-shadow(0 0 8rpx #e4ffa6); }
+  50% { opacity: 1; filter: sepia(1) hue-rotate(50deg) saturate(3) drop-shadow(0 0 30rpx #e4ffa6) drop-shadow(0 0 60rpx #e4ffa6); }
+}
+@keyframes light-s4-front {
+  // #ffd996 (Pale Orange)
+  0%, 100% { opacity: 0.2; filter: sepia(1) hue-rotate(20deg) saturate(3) drop-shadow(0 0 8rpx #ffd996); }
+  50% { opacity: 1; filter: sepia(1) hue-rotate(20deg) saturate(3) drop-shadow(0 0 30rpx #ffd996) drop-shadow(0 0 60rpx #ffd996); }
+}
+
+// Stage 5
+@keyframes shell-stage5 {
+  0%, 100% { filter: drop-shadow(0 0 0 transparent); }
+  50% { filter: drop-shadow(0 0 35rpx #ff6427) drop-shadow(0 0 85rpx #ff6427); }
+}
+@keyframes light-s5-bottom {
+  // #fff204 (Yellow) - 纯黄色，hue-rotate 接近0，高饱和
+  0%, 100% { opacity: 0.2; filter: brightness(1.5) sepia(1) hue-rotate(-5deg) saturate(8) drop-shadow(0 0 8rpx #fff204); }
+  50% { opacity: 1; filter: brightness(1.5) sepia(1) hue-rotate(-5deg) saturate(8) drop-shadow(0 0 30rpx #fff204) drop-shadow(0 0 60rpx #fff204); }
+}
+@keyframes light-s5-center {
+  // #ffa765 (Orange) - 橙色，hue-rotate 负值偏红
+  0%, 100% { opacity: 0.2; filter: brightness(1.3) sepia(1) hue-rotate(-15deg) saturate(4) drop-shadow(0 0 8rpx #ffa765); }
+  50% { opacity: 1; filter: brightness(1.3) sepia(1) hue-rotate(-15deg) saturate(4) drop-shadow(0 0 30rpx #ffa765) drop-shadow(0 0 60rpx #ffa765); }
+}
+@keyframes light-s5-front {
+  // #ffd35a (Golden Yellow) - 金黄色
+  0%, 100% { opacity: 0.2; filter: brightness(1.4) sepia(1) hue-rotate(-10deg) saturate(6) drop-shadow(0 0 8rpx #ffd35a); }
+  50% { opacity: 1; filter: brightness(1.4) sepia(1) hue-rotate(-10deg) saturate(6) drop-shadow(0 0 30rpx #ffd35a) drop-shadow(0 0 60rpx #ffd35a); }
+}
+@keyframes light-s5-top {
+  // #ffc145 (Golden Orange) - 金橙色
+  0%, 100% { opacity: 0.2; filter: brightness(1.3) sepia(1) hue-rotate(-12deg) saturate(5) drop-shadow(0 0 8rpx #ffc145); }
+  50% { opacity: 1; filter: brightness(1.3) sepia(1) hue-rotate(-12deg) saturate(5) drop-shadow(0 0 30rpx #ffc145) drop-shadow(0 0 60rpx #ffc145); }
+}
+
+// 漂浮文字 "功德+1" (保留不变)
 .merit-text {
   position: absolute;
   font-size: 40rpx;
@@ -128,22 +262,25 @@
     animation: floatUp 0.8s ease-out forwards;
   }
 
-  // --- 连击阶段样式 ---
+  // --- 连击阶段样式 (更新颜色映射) ---
+  // Stage 2 (Blue)
   &.blue {
-    color: #1890ff; // 蓝色 (5-9连击)
-    text-shadow: 0 0 5px rgba(24, 144, 255, 0.5);
+    color: #0b8eaf; 
+    text-shadow: 0 0 5px rgba(11, 142, 175, 0.5);
   }
 
+  // Stage 3 (Green/Red) -> 保持逻辑一致，虽然颜色变了
   &.red {
-    color: #ff4d4f; // 红色 (10-14连击)
+    color: #bcbc3c; 
     font-size: 44rpx;
-    text-shadow: 0 0 8px rgba(255, 77, 79, 0.6);
+    text-shadow: 0 0 8px rgba(188, 188, 60, 0.6);
   }
 
+  // Stage 4 (Gold/Orange)
   &.orange {
-    color: #fa8c16; // 橙色 (15+连击)
+    color: #ffb53e; 
     font-size: 50rpx;
-    text-shadow: 0 0 12px rgba(250, 140, 22, 0.8);
+    text-shadow: 0 0 12px rgba(255, 181, 62, 0.8);
   }
 }
 
@@ -156,44 +293,5 @@
   100% {
     transform: translate(-50%, -400rpx); // 向上漂浮 400rpx
     opacity: 0;
-  }
-}
-
-// 蓝色呼吸
-@keyframes breathe-blue {
-
-  0%,
-  100% {
-    box-shadow: 0 0 50rpx rgba(24, 144, 255, 0.5), inset 0 0 30rpx rgba(24, 144, 255, 0.3);
-  }
-
-  50% {
-    box-shadow: 0 0 70rpx rgba(24, 144, 255, 0.8), inset 0 0 40rpx rgba(24, 144, 255, 0.5);
-  }
-}
-
-// 红色呼吸
-@keyframes breathe-red {
-
-  0%,
-  100% {
-    box-shadow: 0 0 60rpx rgba(255, 77, 79, 0.6), inset 0 0 40rpx rgba(255, 77, 79, 0.4);
-  }
-
-  50% {
-    box-shadow: 0 0 90rpx rgba(255, 77, 79, 0.9), inset 0 0 50rpx rgba(255, 77, 79, 0.6);
-  }
-}
-
-// 橙色呼吸 (剧烈)
-@keyframes breathe-orange {
-
-  0%,
-  100% {
-    box-shadow: 0 0 80rpx rgba(255, 165, 0, 0.8), inset 0 0 50rpx rgba(255, 165, 0, 0.5);
-  }
-
-  50% {
-    box-shadow: 0 0 120rpx rgba(255, 165, 0, 1), inset 0 0 70rpx rgba(255, 165, 0, 0.7);
   }
 }

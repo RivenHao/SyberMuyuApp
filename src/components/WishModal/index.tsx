@@ -1,7 +1,5 @@
 import { View, Text, Image, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
-import wishPng from '../../imgs/wish.png'
-import closePng from '../../imgs/close.png'
 import './index.scss'
 
 interface WishModalProps {
@@ -25,27 +23,24 @@ export default function WishModal(props: WishModalProps) {
     onDonate()
   }
   
-  const handleClose = () => {
-    onClose()
-  }
-  
   return (
-    <View className='modal'>
-      <View className='modal-content'>
-        <Text className='modal-title'>- 祈愿 -</Text>
-        <View className='close-btn' onClick={handleClose}>
-          <Image src={closePng} className='close-img' />
+    <View className='modal' onClick={onClose}>
+      <View className='modal-content' onClick={(e) => e.stopPropagation()}>
+        <Image onClick={onClose} className='wish-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
+        <View className='wish-btn'>
+          <View onClick={handleDonate} className='wish-btn-item'>
+            <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-fulfill.png' />
+            <Text className='wish-btn-item-text'>
+              {allCollected ? '佛理图鉴已集齐' : `捐香火，予诸佛（${meritCost}功德）`}
+            </Text>
+          </View>
+          <View onClick={handleWish} className='wish-btn-item'>
+            <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-mail.png' />
+            <Text className='wish-btn-item-text'>
+              用功德，发愿心（{meritCost}功德）
+            </Text>
+          </View>
         </View>
-        <Image src={wishPng} className='wish-img' />
-        <Text>愿行合一</Text>
-        <Button 
-          onClick={handleDonate} 
-          className={`btn ${allCollected ? 'btn-disabled' : ''}`}
-          disabled={allCollected}
-        >
-          {allCollected ? '佛理图鉴已集齐' : `捐香火，予诸佛（${meritCost}功德）`}
-        </Button>
-        <Button onClick={handleWish} className='btn'>用功德，发愿心（{meritCost}功德）</Button>
       </View>
     </View>
   )
