@@ -4,6 +4,7 @@ import { View, Textarea, Image, Text, Button } from "@tarojs/components";
 import './index.scss';
 import { createWish, increasePoolLevel, getUserInfo, getMuyuConfig } from "../../apis";
 import { isMaxPoolLevel } from "../../config/poolMap";
+import { playClickSound } from "../../utils/clickSound";
 
 export default function Wish() {
   const [wish, setWish] = useState('');
@@ -16,10 +17,12 @@ export default function Wish() {
     setWish(e.target.value);
   }
   const handleWish = async () => {
+    playClickSound()
     setShowModal(true)
     
   }
   const handleWishConfirm = async () => {
+    playClickSound()
     await createWish({ content: wish, merit_cost: meritCost })
     
     // 检查功德池是否已满，未满才扩容
@@ -31,13 +34,12 @@ export default function Wish() {
     } catch (err) {
       console.error('扩容检查失败:', err)
     }
-    
-    Taro.navigateBack()
+    Taro.navigateTo({ url: '/pages/tip/index' })
   }
   return (
     <View className='index-page'>
       <Image className='wish-bg-circle' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish-bg-circle.png' />
-      <View className='wish-title' onClick={() => Taro.navigateBack()}>
+      <View className='wish-title' onClick={() => { playClickSound(); Taro.navigateBack() }}>
         <Image className='wish-title-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/back.png' />
         <Text className='wish-title-text'>返回</Text>
       </View>
@@ -56,13 +58,13 @@ export default function Wish() {
           <Text className='wish-button-text'>愿望实现后，记得来还愿哦～</Text>
       </View>
       {showModal && (
-        <View className='wish-modal' onClick={() => setShowModal(false)}>
+        <View className='wish-modal' onClick={() => { playClickSound(); setShowModal(false) }}>
           <View className='wish-modal-content' onClick={(e) => e.stopPropagation()}>
             <Image className='wish-modal-image' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/modal-wish.png' />
             <Text className='wish-modal-text'>确认后将不可修改，请谨慎填写</Text>
             <View className='wish-modal-buttons'>
               <Button className='wish-modal-btn wish-modal-btn-confirm' onClick={handleWishConfirm}>确认（{meritCost}功德）</Button>
-              <Button className='wish-modal-btn wish-modal-btn-cancel' onClick={() => setShowModal(false)}>取消</Button>
+              <Button className='wish-modal-btn wish-modal-btn-cancel' onClick={() => { playClickSound(); setShowModal(false) }}>取消</Button>
             </View>
           </View>
         </View>

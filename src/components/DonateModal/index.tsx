@@ -6,6 +6,7 @@ import './index.scss'
 import { getGalleryList, decreaseMerit, increasePoolLevel } from "../../apis";
 import { UserInfo } from "../../apis/type";
 import { getPoolCapacity, isMaxPoolLevel, DEFAULT_POOL_CAPACITIES } from "../../config/poolMap";
+import { playClickSound } from '../../utils/clickSound'
 
 interface DonateModalProps {
   show: boolean
@@ -25,11 +26,13 @@ export default function DonateModal(props: DonateModalProps) {
   
   const handleFlip = () => {
     if (!isFlipped) {
+      playClickSound()
       setIsFlipped(true)
     }
   }
 
   const handleClose = () => {
+    playClickSound()
     setIsFlipped(false) // 重置状态
     setCardInfo(null)
     setAllCollected(false)
@@ -37,6 +40,7 @@ export default function DonateModal(props: DonateModalProps) {
   }
 
   const handleDonate = async () => {
+    playClickSound()
     try {
       // 1. 抽取佛理卡片
       const cardRes: any = await getGalleryList()

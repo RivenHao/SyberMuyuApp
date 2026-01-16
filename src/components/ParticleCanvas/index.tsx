@@ -103,11 +103,12 @@ interface ParticleGroup {
   textScale: number
   color: string
   meritValue: number  // 这次要加的功德值
+  withParticles: boolean  // 是否显示粒子效果
   onComplete?: () => void  // 完成回调
 }
 
 export interface ParticleCanvasRef {
-  emit: (x: number, y: number, targetX: number, targetY: number, text: string, color: string, onComplete?: () => void) => void
+  emit: (x: number, y: number, targetX: number, targetY: number, text: string, color: string, withParticles: boolean, onComplete?: () => void) => void
 }
 
 const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
@@ -169,17 +170,19 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
         group.frameCount++
         
         // 文字一直往上飘，同时渐隐
-        // 从第 50 帧开始，粒子逐渐出现并飞向目标
-        const particleStartFrame = 50
+        // 从第 45 帧开始，粒子逐渐出现并飞向目标（约 0.75s）
+        const particleStartFrame = 45
         
         // 文字始终在飘动和渐隐
         if (group.textAlpha > 0) {
           // 文字持续往上飘（更快一点）
           group.textY -= 2.2
           
-          // 从第 40 帧开始渐隐
-          if (group.frameCount > 40) {
-            group.textAlpha -= 0.035
+          // 非连击（无粒子）时，文字多飘一会儿
+          const fadeStartFrame = group.withParticles ? 40 : 70
+          const fadeStep = group.withParticles ? 0.035 : 0.02
+          if (group.frameCount > fadeStartFrame) {
+            group.textAlpha -= fadeStep
           }
           
           ctx.save()
@@ -199,7 +202,18 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
           ctx.globalAlpha = 1
         }
 
-        // 粒子从第 25 帧开始出现
+        // 无粒子模式：文字消失后直接移除
+        if (!group.withParticles) {
+          if (group.textAlpha <= 0) {
+            if (group.onComplete) {
+              group.onComplete()
+            }
+            return false
+          }
+          return true
+        }
+
+        // 有粒子模式：粒子从第 45 帧开始出现
         if (group.frameCount >= particleStartFrame) {
           // 更新粒子起始位置到当前文字位置
           if (group.frameCount === particleStartFrame) {
@@ -238,13 +252,14 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
   }
 
   // 发射粒子
-  const emit = (x: number, y: number, targetX: number, targetY: number, text: string, color: string, onComplete?: () => void) => {
+  const emit = (x: number, y: number, targetX: number, targetY: number, text: string, color: string, withParticles: boolean, onComplete?: () => void) => {
     const particles: Particle[] = []
-    const count = 15 + Math.floor(Math.random() * 8)
-
-    for (let i = 0; i < count; i++) {
-      const delay = Math.floor(Math.random() * 20)
-      particles.push(new Particle(x, y - 80, targetX, targetY, color, delay))
+    if (withParticles) {
+      const count = 15 + Math.floor(Math.random() * 8)
+      for (let i = 0; i < count; i++) {
+        const delay = Math.floor(Math.random() * 20)
+        particles.push(new Particle(x, y - 20, targetX, targetY, color, delay))
+      }
     }
 
     // 从文字中提取数值
@@ -257,12 +272,13 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
       frameCount: 0,
       text,
       textX: x,
-      textY: y - 80,
-      textStartY: y - 80,
+      textY: y - 20,
+      textStartY: y - 20,
       textAlpha: 1,
       textScale: 1,
       color,
       meritValue,
+      withParticles,
       onComplete
     })
   }

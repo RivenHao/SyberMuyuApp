@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro from '@tarojs/taro'
+import { playClickSound } from '../../utils/clickSound'
 import { getSetting, updateSetting, SettingData } from '../../apis'
 import './index.scss'
 
@@ -31,6 +32,7 @@ export default function SettingModal({ show, onClose, onSettingChange }: Setting
     try {
       const res = await getSetting()
       setSetting(res)
+      Taro.setStorageSync('setting', res)
     } catch (err) {
       console.error('获取设置失败', err)
     }
@@ -39,20 +41,21 @@ export default function SettingModal({ show, onClose, onSettingChange }: Setting
   // 切换设置项
   const handleChange = async (key: keyof SettingData, value: boolean) => {
     if (loading) return
+    playClickSound()
     
     setLoading(true)
     const newSetting = { ...setting, [key]: value }
     setSetting(newSetting) // 乐观更新
+    Taro.setStorageSync('setting', newSetting)
     onSettingChange?.(newSetting) // 同步给父组件
 
     try {
       await updateSetting({ [key]: value })
-      Taro.showToast({ title: '已更新', icon: 'none', duration: 1000 })
     } catch (err) {
       // 回滚
       setSetting(setting)
+      Taro.setStorageSync('setting', setting)
       onSettingChange?.(setting)
-      Taro.showToast({ title: '更新失败', icon: 'none' })
     } finally {
       setLoading(false)
     }
@@ -69,9 +72,9 @@ export default function SettingModal({ show, onClose, onSettingChange }: Setting
   ]
 
   return (
-    <View className='setting-modal' onClick={onClose}>
+    <View className='setting-modal' onClick={() => { playClickSound(); onClose() }}>
       <View className='setting-content' onClick={(e) => e.stopPropagation()}>
-        <Image onClick={onClose} className='setting-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
+        <Image onClick={() => { playClickSound(); onClose() }} className='setting-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
         <View className='setting-list'>
           {settingItems.map((item) => (
             <View className='setting-item' key={item.key}>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Taro, { useDidShow } from "@tarojs/taro";
+import { playClickSound } from "../../utils/clickSound";
 
 import { View, Text } from "@tarojs/components";
 import './index.scss';
@@ -20,7 +21,7 @@ export default function Beings() {
   })
   return (
     <View className='index-page'>
-      <View className='back-btn' onClick={() => Taro.navigateBack()}>返回</View>
+      <View className='back-btn' onClick={() => { playClickSound(); Taro.navigateBack() }}>返回</View>
       <View className='title'>众生</View>
       <Text className='personal-merit'>个人历史总功德：{personalMerit}</Text>
       <Text className='global-merit'>全服功德池：{globalMerit}</Text>

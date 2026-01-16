@@ -11,20 +11,16 @@ import SettingModal from '../../components/SettingModal'
 import MuyuConfigModal from '../../components/MuyuConfigModal'
 import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanvas'
 import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
-
-import normalSound from '../../audios/normal.mp3'
-import blueSound from '../../audios/blue.mp3'
-import redSound from '../../audios/red.mp3'
-import orangeSound from '../../audios/orange.mp3'
+import { playClickSound } from '../../utils/clickSound'
 
 // 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
 const MUYU_IMGS = {
   body: {
-    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-1.png',
-    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-2.png',
-    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-3.png',
-    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-4.png',
-    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-5.png',
+    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu1.png',
+    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu2.png',
+    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu3.png',
+    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu4.png',
+    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu5.png',
   },
   parts: {
     bottom: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-bottom.png',
@@ -58,41 +54,49 @@ export default function Index() {
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
   const tapCount = useRef<number>(0) // 累计敲击次数（沉浸模式用）
   const immersiveTimer = useRef<any>(null) // 沉浸模式恢复定时器
+  const comboResetTimer = useRef<any>(null) // 连击重置定时器
   
   // 粒子效果相关
   const particleRef = useRef<ParticleCanvasRef>(null)
   const poolTarget = useRef({ x: 200, y: 100 }) // 功德池目标位置
   const muyuPos = useRef({ x: 200, y: 400 }) // 木鱼位置
 
-  // 不同连击阶段的音效上下文
-  const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext | null>>({
-    1: null, 2: null, 3: null, 4: null, 5: null
+  // 不同连击阶段的音效上下文（小池子，允许连点时重叠播放）
+  const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext[]>>({
+    1: [], 2: [], 3: [], 4: [], 5: []
+  })
+  const audioIndex = useRef<Record<ComboStage, number>>({
+    1: 0, 2: 0, 3: 0, 4: 0, 5: 0
   })
 
   // 音效资源配置映射
   const SOUND_URLS: Record<ComboStage, string> = {
-    1: normalSound,
-    2: blueSound,
-    3: redSound,
-    4: orangeSound,
-    5: orangeSound // 复用
+    1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/normal.mp3',
+    2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/normal.mp3',
+    3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/blue.mp3',
+    4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/red.mp3',
+    5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/orange.mp3'
   }
 
   // 初始化音频
   useEffect(() => {
-    // 创建5个音频实例
+    const POOL_SIZE = 8
     const stageList: ComboStage[] = [1, 2, 3, 4, 5]
     const ctxMap = audioContexts.current
     
     stageList.forEach(s => {
-      const ctx = Taro.createInnerAudioContext()
-      ctx.src = SOUND_URLS[s]
-      ctxMap[s] = ctx
+      const pool: Taro.InnerAudioContext[] = []
+      for (let i = 0; i < POOL_SIZE; i++) {
+        const ctx = Taro.createInnerAudioContext()
+        ctx.src = SOUND_URLS[s]
+        pool.push(ctx)
+      }
+      ctxMap[s] = pool
     })
     
     return () => {
       stageList.forEach(s => {
-        ctxMap[s]?.destroy()
+        ctxMap[s].forEach(ctx => ctx.destroy())
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -101,8 +105,11 @@ export default function Index() {
   // 播放敲击音效（根据当前阶段）
   const playTapSound = (currentStage: ComboStage) => {
     if (!setting.sound) return
-    const ctx = audioContexts.current[currentStage]
-    if (!ctx) return
+    const pool = audioContexts.current[currentStage]
+    if (!pool.length) return
+    const idx = audioIndex.current[currentStage] % pool.length
+    audioIndex.current[currentStage] = idx + 1
+    const ctx = pool[idx]
     ctx.stop()
     ctx.seek(0)
     ctx.play()
@@ -141,6 +148,7 @@ export default function Index() {
       
       const settingInfo = await getSetting()
       setSetting(settingInfo)
+      Taro.setStorageSync('setting', settingInfo)
       
       const galleryRes = await getUserGalleryList()
       setAllCollected(galleryRes.ownedNum === galleryRes.total)
@@ -163,9 +171,12 @@ export default function Index() {
           }
         }
         if (res[1]) {
+          // 主体图 375×812，发光层 375×345，取木鱼区域顶部作为基准点
+          const woodTopRatio = 1 - (345 / 812)
+          const woodTop = res[1].top + res[1].height * woodTopRatio
           muyuPos.current = {
             x: res[1].left + res[1].width / 2,
-            y: res[1].top + res[1].height / 3 
+            y: woodTop
           }
         }
       })
@@ -228,6 +239,14 @@ export default function Index() {
     }
     lastTapTime.current = now;
 
+    // 超过连击窗口后自动重置阶段（不需要等第二次敲击）
+    if (comboResetTimer.current) clearTimeout(comboResetTimer.current);
+    comboResetTimer.current = setTimeout(() => {
+      comboCount.current = 0;
+      lastTapTime.current = 0;
+      setStage(1);
+    }, combo_interval_max + 250);
+
     // --- 计算阶段颜色和加分 ---
     const { 
       blue_combo, red_combo, orange_combo, purple_combo, 
@@ -289,6 +308,8 @@ export default function Index() {
     
     const addValue = meritAdd
     
+    const withParticles = currentStage >= 2
+
     particleRef.current?.emit(
       muyuPos.current.x,
       muyuPos.current.y,
@@ -296,6 +317,7 @@ export default function Index() {
       poolTarget.current.y,
       `功德+${meritAdd}`,
       colors[currentStage],
+      withParticles,
       () => {
         setMerit(prev => prev + addValue)
         pendingMerit.current += addValue
@@ -309,6 +331,7 @@ export default function Index() {
   useEffect(() => {
     return () => {
       if (syncTimer.current) clearTimeout(syncTimer.current);
+      if (comboResetTimer.current) clearTimeout(comboResetTimer.current);
       syncMeritToBackend();
     }
   }, [])
@@ -318,26 +341,26 @@ export default function Index() {
       <View 
         className={`navbar ${immersiveHidden ? 'immersive-hidden' : ''}`}
       >
-        <View className='navbar-item' onClick={() => setShowSettingModal(true)}>
-          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/set.png' style={{ width:'76rpx', height:'62rpx' }} />
+        <View className='navbar-item' onClick={() => { playClickSound(); setShowSettingModal(true) }}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/set_new.png' style={{ width:'78rpx', height:'62rpx' }} />
         </View>
-        <View className='navbar-item' onClick={() => setShowGalleryModal(true)}>
-          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/catalog.png' style={{ width:'74rpx', height:'62rpx' }} />
+        <View className='navbar-item' onClick={() => { playClickSound(); setShowGalleryModal(true) }}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/catlog_new.png' style={{ width:'72rpx', height:'62rpx' }} />
         </View>
-        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/fulfill/index' })}>
-          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/fulfill.png' style={{ width:'90rpx', height:'62rpx' }} />
+        <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/fulfill/index' }) }}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/wish_new.png' style={{ width:'80rpx', height:'62rpx' }} />
         </View>
-        <View className='navbar-item' onClick={() => Taro.navigateTo({ url: '/pages/beings/index' })}>
-          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/living.png' style={{ width:'90rpx', height:'62rpx' }} />
+        <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/beings/index' }) }}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/live_new.png' style={{ width:'76rpx', height:'62rpx' }} />
         </View>
-        <View className='navbar-item' onClick={() => setShowMuyuConfigModal(true)}>
+        <View className='navbar-item' onClick={() => { playClickSound(); setShowMuyuConfigModal(true) }}>
           配置
         </View>
       </View>
 
       <View 
         className='merit-pool-container'
-        onClick={handleWish}
+        onClick={() => { playClickSound(); handleWish() }}
       >
         <Text className='merit-pool-container-text'> { merit } / { meritPoolMax } </Text>
         <View className='merit-pool' style={{ borderColor: merit >= meritPoolMax ? '#FDC74E' : '#454545' }}>
@@ -349,8 +372,11 @@ export default function Index() {
         </View>
       </View>
       
+      {/* 木鱼后方光晕 */}
+      <View className={`muyu-glow ${stage >= 2 ? `stage-${stage}` : ''}`} />
+      
       {/* 木鱼容器：动态添加 stage 类名 */}
-      <View className={`muyu-container stage-${stage}`} onClick={handleTap}>
+      <View className={`muyu-container stage-${stage} ${isAnimate ? 'active' : ''}`} onClick={handleTap}>
         {/* 底层：木鱼主体（预加载所有阶段，通过 opacity 切换，防止闪烁） */}
         {Object.keys(MUYU_IMGS.body).map((key, index) => {
           const imgStage = index + 1;
@@ -361,7 +387,7 @@ export default function Index() {
             <Image 
               key={key}
               src={MUYU_IMGS.body[key as keyof typeof MUYU_IMGS.body]} 
-              className={`muyu-img layer-base ${isCurrent ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+              className={`muyu-img layer-base ${isCurrent ? 'show' : ''}`} 
             />
           )
         })}
@@ -369,19 +395,19 @@ export default function Index() {
         {/* 发光部件层（预加载，通过 opacity 切换） */}
         <Image 
           src={MUYU_IMGS.parts.bottom} 
-          className={`muyu-img layer-light light-bottom ${stage >= 2 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+          className={`muyu-img layer-light light-bottom ${stage >= 2 ? 'show' : ''}`} 
         />
         <Image 
           src={MUYU_IMGS.parts.center} 
-          className={`muyu-img layer-light light-center ${stage >= 3 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+          className={`muyu-img layer-light light-center ${stage >= 3 ? 'show' : ''}`} 
         />
         <Image 
           src={MUYU_IMGS.parts.front} 
-          className={`muyu-img layer-light light-front ${stage >= 4 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+          className={`muyu-img layer-light light-front ${stage >= 4 ? 'show' : ''}`} 
         />
         <Image 
           src={MUYU_IMGS.parts.top} 
-          className={`muyu-img layer-light light-top ${stage >= 5 ? 'show' : ''} ${isAnimate ? 'active' : ''}`} 
+          className={`muyu-img layer-light light-top ${stage >= 5 ? 'show' : ''}`} 
         />
       </View>
       

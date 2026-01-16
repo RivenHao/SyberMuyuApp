@@ -1,5 +1,6 @@
 import { View, Text, Image, Button } from "@tarojs/components";
 import Taro from "@tarojs/taro";
+import { playClickSound } from '../../utils/clickSound'
 import './index.scss'
 
 interface WishModalProps {
@@ -14,19 +15,21 @@ export default function WishModal(props: WishModalProps) {
   if (!show) return null
   
   const handleWish = () => {
+    playClickSound()
     onClose()
     Taro.navigateTo({ url: `/pages/wish/index?merit_cost=${meritCost}` })
   }
   
   const handleDonate = () => {
     if (allCollected) return // 已集齐则不响应点击
+    playClickSound()
     onDonate()
   }
   
   return (
-    <View className='modal' onClick={onClose}>
+    <View className='modal' onClick={() => { playClickSound(); onClose() }}>
       <View className='modal-content' onClick={(e) => e.stopPropagation()}>
-        <Image onClick={onClose} className='wish-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
+        <Image onClick={() => { playClickSound(); onClose() }} className='wish-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
         <View className='wish-btn'>
           <View onClick={handleDonate} className='wish-btn-item'>
             <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-fulfill.png' />

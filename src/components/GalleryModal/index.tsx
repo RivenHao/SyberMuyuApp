@@ -3,6 +3,7 @@ import { View, Text } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import './index.scss'
 import { getUserGalleryList } from "../../apis";
+import { playClickSound } from '../../utils/clickSound'
 
 interface GalleryModalProps {
     show: boolean
@@ -36,6 +37,7 @@ export default function GalleryModal({ show, onClose }: GalleryModalProps) {
     const handleItemClick = (item: any) => {
         // 只有已拥有的才能查看详情
         if (item.is_owned) {
+            playClickSound()
             setSelectedCard(item)
         } else {
             Taro.showToast({ title: '尚未解锁', icon: 'none' })
@@ -43,11 +45,12 @@ export default function GalleryModal({ show, onClose }: GalleryModalProps) {
     }
 
     const handleCloseDetail = () => {
+        playClickSound()
         setSelectedCard(null)
     }
 
     return (
-    <View className='gallery-modal' onClick={onClose}>
+    <View className='gallery-modal' onClick={() => { playClickSound(); onClose() }}>
         <View className='gallery-modal-content' onClick={(e) => e.stopPropagation()}>
             <View className='gallery-modal-title'>佛理图鉴</View>
             <View className='gallery-modal-total'>已收集：{ownedNum}/{total}</View>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { View, Text, Input, Button } from '@tarojs/components'
 import Taro from '@tarojs/taro'
+import { playClickSound } from '../../utils/clickSound'
 import { getMuyuConfig, updateMuyuConfig, resetMuyuConfig, MuyuConfigData } from '../../apis/muyuConfig'
 import { DEFAULT_MUYU_CONFIG } from '../../config/muyuConfig'
 import './index.scss'
@@ -68,6 +69,7 @@ export default function MuyuConfigModal({ show, onClose, onConfigChange }: MuyuC
 
   // 保存配置
   const handleSave = async () => {
+    playClickSound()
     try {
       setLoading(true)
       
@@ -93,6 +95,7 @@ export default function MuyuConfigModal({ show, onClose, onConfigChange }: MuyuC
 
   // 重置为默认配置
   const handleReset = async () => {
+    playClickSound()
     try {
       setLoading(true)
       const res = await resetMuyuConfig()
@@ -111,7 +114,7 @@ export default function MuyuConfigModal({ show, onClose, onConfigChange }: MuyuC
   if (!show) return null
 
   return (
-    <View className='muyu-config-modal' onClick={onClose}>
+    <View className='muyu-config-modal' onClick={() => { playClickSound(); onClose() }}>
       <View className='config-content' onClick={(e) => e.stopPropagation()}>
         <Text className='config-title'>木鱼配置（测试用）</Text>
         
@@ -274,7 +277,7 @@ export default function MuyuConfigModal({ show, onClose, onConfigChange }: MuyuC
           <Button className='btn-save' onClick={handleSave} disabled={loading}>保存配置</Button>
         </View>
 
-        <View className='config-close' onClick={onClose}>
+        <View className='config-close' onClick={() => { playClickSound(); onClose() }}>
           <Text>关闭</Text>
         </View>
       </View>

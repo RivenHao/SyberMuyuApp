@@ -1,13 +1,14 @@
 .index-page {
   position: relative;
   height: 100vh;
-  background-color: #0D132C;
+  background-color: #000;
   overflow: hidden;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 
 // 顶部导航
 .fulfill-header {
@@ -49,6 +50,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  transition: opacity 0.4s ease-out;
+
+  &.visible {
+    opacity: 1;
+  }
+
+  &.hidden {
+    opacity: 0;
+  }
 
   .empty-state-image {
     width: 190rpx;
@@ -88,6 +98,15 @@
   left: 0;
   width: 100%;
   height: 80vh;
+  transition: opacity 0.4s ease-out;
+
+  &.visible {
+    opacity: 1;
+  }
+
+  &.hidden {
+    opacity: 0;
+  }
 
   .wish-swiper-item {
     display: flex;
@@ -137,32 +156,6 @@
     }
   }
 
-  // 粒子容器
-  .particles-container {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: visible;
-  }
-
-  .particle {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: var(--size, 8rpx);
-    height: var(--size, 8rpx);
-    background: radial-gradient(circle, #e8d5b0 0%, #ffd700 50%, transparent 100%);
-    border-radius: 50%;
-    opacity: 0;
-    animation: particle-fly 2.2s ease-out forwards;
-    animation-delay: var(--delay, 0s);
-    box-shadow: 0 0 10rpx #ffd700, 0 0 20rpx #e8d5b0;
-  }
-
   &.dissolving {
     animation: card-dissolve 1.2s ease-out forwards;
   }
@@ -179,6 +172,15 @@
   align-items: center;
   gap: 16rpx;
   z-index: 5;
+  transition: opacity 0.4s ease-out;
+
+  &.visible {
+    opacity: 1;
+  }
+
+  &.hidden {
+    opacity: 0;
+  }
 
   .swiper-dot {
     width: 12rpx;
@@ -212,6 +214,16 @@
   font-size: 32rpx;
   box-shadow: 0 6rpx 8rpx rgba(0, 0, 0, 0.25);
   z-index: 5;
+  transition: opacity 0.4s ease-out;
+
+  &.visible {
+    opacity: 1;
+  }
+
+  &.hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
 
   &:active {
     opacity: 0.9;
@@ -256,27 +268,6 @@
   }
 }
 
-// 粒子飞散动画
-@keyframes particle-fly {
-  0% {
-    opacity: var(--opacity, 0.8);
-    transform: translate(-50%, -50%) scale(1);
-  }
-
-  15% {
-    opacity: var(--opacity, 0.8);
-  }
-
-  50% {
-    opacity: calc(var(--opacity, 0.8) * 0.6);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translate(calc(-50% + var(--tx, 0)),
-        calc(-50% + var(--ty, 0))) scale(0.2);
-  }
-}
 
 // 还愿弹窗
 .fulfill-modal {
