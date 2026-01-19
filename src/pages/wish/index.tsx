@@ -10,6 +10,7 @@ export default function Wish() {
   const [wish, setWish] = useState('');
   const [meritCost, setMeritCost] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false); // 防重复提交
   useLoad((options:{merit_cost: number}) => {
     setMeritCost(Number(options.merit_cost));
   });
@@ -22,19 +23,27 @@ export default function Wish() {
     
   }
   const handleWishConfirm = async () => {
+    if (submitting) return; // 防止重复点击
+    setSubmitting(true);
     playClickSound()
-    await createWish({ content: wish, merit_cost: meritCost })
     
-    // 检查功德池是否已满，未满才扩容
     try {
-      const [userInfo, config] = await Promise.all([getUserInfo(), getMuyuConfig()])
-      if (!isMaxPoolLevel(userInfo.pool_level ?? 0, config.pool_capacities)) {
-        await increasePoolLevel()
+      await createWish({ content: wish, merit_cost: meritCost })
+      
+      // 检查功德池是否已满，未满才扩容
+      try {
+        const [userInfo, config] = await Promise.all([getUserInfo(), getMuyuConfig()])
+        if (!isMaxPoolLevel(userInfo.pool_level ?? 0, config.pool_capacities)) {
+          await increasePoolLevel()
+        }
+      } catch (err) {
+        console.error('扩容检查失败:', err)
       }
+      Taro.navigateTo({ url: '/pages/tip/index' })
     } catch (err) {
-      console.error('扩容检查失败:', err)
+      console.error('许愿失败:', err)
+      setSubmitting(false); // 失败时恢复按钮
     }
-    Taro.navigateTo({ url: '/pages/tip/index' })
   }
   return (
     <View className='index-page'>
@@ -63,7 +72,7 @@ export default function Wish() {
             <Image className='wish-modal-image' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/modal-wish.png' />
             <Text className='wish-modal-text'>确认后将不可修改，请谨慎填写</Text>
             <View className='wish-modal-buttons'>
-              <Button className='wish-modal-btn wish-modal-btn-confirm' onClick={handleWishConfirm}>确认（{meritCost}功德）</Button>
+              <Button className='wish-modal-btn wish-modal-btn-confirm' onClick={handleWishConfirm} disabled={submitting}>{submitting ? '祈愿中...' : `确认（${meritCost}功德）`}</Button>
               <Button className='wish-modal-btn wish-modal-btn-cancel' onClick={() => { playClickSound(); setShowModal(false) }}>取消</Button>
             </View>
           </View>

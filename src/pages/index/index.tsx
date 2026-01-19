@@ -308,7 +308,8 @@ export default function Index() {
     
     const addValue = meritAdd
     
-    const withParticles = currentStage >= 2
+    // 只要是连击（comboCount >= 2），就显示粒子效果，和阶段无关
+    const withParticles = comboCount.current >= 2
 
     particleRef.current?.emit(
       muyuPos.current.x,
@@ -362,13 +363,15 @@ export default function Index() {
         className='merit-pool-container'
         onClick={() => { playClickSound(); handleWish() }}
       >
-        <Text className='merit-pool-container-text'> { merit } / { meritPoolMax } </Text>
         <View className='merit-pool' style={{ borderColor: merit >= meritPoolMax ? '#FDC74E' : '#454545' }}>
           <View className='merit-pool-current' style={{ width: `${merit >= meritPoolMax ? 100 : (merit / meritPoolMax) * 100}%` }} />
           { merit >= meritPoolMax && (
-            <Text className={`merit-pool-title ${immersiveHidden ? 'immersive-hidden' : ''}`}>池已满，点击祈愿</Text>
+            <>
+              <Text className={`merit-pool-title ${immersiveHidden ? 'immersive-hidden' : ''}`}>池已满，点击祈愿</Text>
+            </>
           )
         }
+        <Text className='merit-pool-container-text'> { merit } / { meritPoolMax } </Text>
         </View>
       </View>
       
@@ -376,7 +379,7 @@ export default function Index() {
       <View className={`muyu-glow ${stage >= 2 ? `stage-${stage}` : ''}`} />
       
       {/* 木鱼容器：动态添加 stage 类名 */}
-      <View className={`muyu-container stage-${stage} ${isAnimate ? 'active' : ''}`} onClick={handleTap}>
+      <View className={`muyu-container stage-${stage} ${isAnimate ? 'active' : ''}`} onTouchStart={handleTap}>
         {/* 底层：木鱼主体（预加载所有阶段，通过 opacity 切换，防止闪烁） */}
         {Object.keys(MUYU_IMGS.body).map((key, index) => {
           const imgStage = index + 1;

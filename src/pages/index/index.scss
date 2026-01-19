@@ -44,10 +44,6 @@
   font-weight: bold;
   text-align: center;
   font-size: 36rpx;
-  .merit-pool-container-text {
-    font-size: 24rpx;
-    color: #CEF7FF;
-  }
 }
 
 .merit-pool-title {
@@ -66,17 +62,25 @@
   margin-top: 10rpx;
   background-color: transparent;
   overflow: hidden;
-  position: relative; // 确保内部绝对定位相对于它
+  position: relative;
 
   .merit-pool-current {
-    position: absolute; // 绝对定位，脱离文档流，不占位
+    position: absolute;
     top: 0;
     left: 0;
     height: 100%;
-    border-radius: 24rpx;
+    border-radius: 22rpx;
     background: linear-gradient(270deg, #FFC548 0%, #D0F2C5 100%);
     transition: width 0.3s ease;
-    z-index: 1; // 在下层
+    z-index: 1;
+  }
+
+  .merit-pool-container-text {
+    position: absolute;
+    bottom: 0;
+    right: 10rpx;
+    font-size: 26rpx;
+    color: #847F6E;
   }
 
   // 数字文字需要浮在进度条上面
@@ -95,8 +99,8 @@
   bottom: 100rpx; // 整体上移一点
   left: 50%;
   transform: translateX(-50%);
-  width: 500rpx;
-  height: 1083rpx; // 500 × (812/375) ≈ 1083，保持主体比例
+  width: 560rpx;  // 放大后的宽度
+  height: 1213rpx; // 560 × (812/375) ≈ 1213，保持主体比例
   
   display: block; 
   overflow: visible; // 允许上方透明区域溢出
@@ -139,7 +143,7 @@
     z-index: 2;
     top: auto;
     bottom: 0;
-    height: 460rpx; // 500 × (345/375) ≈ 460
+    height: 515rpx; // 560 × (345/375) ≈ 515，与主体同比例放大
     transform: none;
     
     &.active {
@@ -183,34 +187,34 @@
   bottom: 100rpx;
   left: 50%;
   transform: translateX(-50%);
-  width: 560rpx;  // 略大于木鱼
-  height: 560rpx;
+  width: 620rpx;  // 略大于木鱼（放大后）
+  height: 620rpx;
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
   opacity: 0;
 
   &.stage-2 {
-    background: radial-gradient(circle, rgba(11, 142, 175, 0.55) 0%, rgba(11, 142, 175, 0.25) 35%, transparent 70%);
+    background: radial-gradient(circle, rgba(11, 142, 175, 0.85) 0%, rgba(11, 142, 175, 0.5) 35%, transparent 70%);
     animation: glow-breathe 3s ease-in-out infinite;
   }
   &.stage-3 {
-    background: radial-gradient(circle, rgba(188, 188, 60, 0.55) 0%, rgba(188, 188, 60, 0.25) 35%, transparent 70%);
+    background: radial-gradient(circle, rgba(188, 188, 60, 0.85) 0%, rgba(188, 188, 60, 0.5) 35%, transparent 70%);
     animation: glow-breathe 3s ease-in-out infinite;
   }
   &.stage-4 {
-    background: radial-gradient(circle, rgba(255, 181, 62, 0.6) 0%, rgba(255, 181, 62, 0.3) 35%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 181, 62, 0.9) 0%, rgba(255, 181, 62, 0.55) 35%, transparent 70%);
     animation: glow-breathe 3s ease-in-out infinite;
   }
   &.stage-5 {
-    background: radial-gradient(circle, rgba(255, 100, 39, 0.6) 0%, rgba(255, 100, 39, 0.3) 35%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 100, 39, 0.9) 0%, rgba(255, 100, 39, 0.55) 35%, transparent 70%);
     animation: glow-breathe 3s ease-in-out infinite;
   }
 }
 
 @keyframes glow-breathe {
-  0%, 100% { opacity: 0.35; transform: translateX(-50%) scale(0.95); }
-  50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
+  0%, 100% { opacity: 0.2; transform: translateX(-50%) scale(0.95); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
 }
 
 // ========== 动画关键帧 (Keyframes) - Filter 方案 ==========
