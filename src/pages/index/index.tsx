@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
-import Taro, { useDidShow } from '@tarojs/taro'
+import Taro, { useDidShow, useShareAppMessage, useLoad } from '@tarojs/taro'
 import './index.scss'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, getMuyuConfig, MuyuConfigData } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, getMuyuConfig, MuyuConfigData, checkShareCard } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
 import GalleryModal from '../../components/GalleryModal'
 import SettingModal from '../../components/SettingModal'
 import MuyuConfigModal from '../../components/MuyuConfigModal'
+import ShareUnlockModal from '../../components/ShareUnlockModal'
+import ShareCardModal from '../../components/ShareCardModal'
 import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanvas'
 import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
 import { playClickSound } from '../../utils/clickSound'
@@ -16,11 +18,11 @@ import { playClickSound } from '../../utils/clickSound'
 // 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
 const MUYU_IMGS = {
   body: {
-    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu1.png',
-    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu2.png',
-    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu3.png',
-    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu4.png',
-    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/long-muyu5.png',
+    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-1.png',
+    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-2.png',
+    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-3.png',
+    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-4.png',
+    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-5.png',
   },
   parts: {
     bottom: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-bottom.png',
@@ -52,6 +54,11 @@ export default function Index() {
   const [setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
   const [immersiveHidden, setImmersiveHidden] = useState(false) // 沉浸模式是否隐藏UI
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
+  const [shareCardInfo, setShareCardInfo] = useState<any>(null) // 当前分享的卡片信息
+  const [showShareUnlockModal, setShowShareUnlockModal] = useState(false) // 分享解锁结果弹窗（已拥有时显示）
+  const [shareUnlockResult, setShareUnlockResult] = useState<{ success: boolean; cardTitle?: string }>({ success: false })
+  const [showShareCardModal, setShowShareCardModal] = useState(false) // 分享卡片翻牌弹窗（未拥有时显示）
+  const [pendingShareCard, setPendingShareCard] = useState<any>(null) // 待翻牌的分享卡片
   const tapCount = useRef<number>(0) // 累计敲击次数（沉浸模式用）
   const immersiveTimer = useRef<any>(null) // 沉浸模式恢复定时器
   const comboResetTimer = useRef<any>(null) // 连击重置定时器
@@ -110,8 +117,7 @@ export default function Index() {
     const idx = audioIndex.current[currentStage] % pool.length
     audioIndex.current[currentStage] = idx + 1
     const ctx = pool[idx]
-    ctx.stop()
-    ctx.seek(0)
+    // 直接播放，池子有8个实例，连击时轮流使用，无需 stop/seek
     ctx.play()
   }
 
@@ -181,6 +187,60 @@ export default function Index() {
         }
       })
     }, 500)
+  })
+
+  // 处理分享链接进入时的卡片展示
+  useLoad((options: { cardId?: string }) => {
+    if (options.cardId) {
+      const cardId = Number(options.cardId)
+      if (cardId > 0) {
+        // 延迟执行，等待登录完成
+        setTimeout(async () => {
+          try {
+            const result: any = await checkShareCard(cardId)
+            const { card, isOwned } = result || {}
+            
+            if (!card) {
+              console.log('卡片不存在')
+              return
+            }
+            
+            if (isOwned) {
+              // 已拥有，显示提示弹窗
+              setShareUnlockResult({ 
+                success: false, 
+                cardTitle: card.title 
+              })
+              setShowShareUnlockModal(true)
+            } else {
+              // 未拥有，显示翻牌弹窗
+              setPendingShareCard(card)
+              setShowShareCardModal(true)
+            }
+          } catch (err: any) {
+            console.log('检查卡片失败:', err?.msg || err)
+          }
+        }, 500)
+      }
+    }
+  })
+
+  // 分享卡片给好友
+  useShareAppMessage(() => {
+    // 如果有当前抽到的卡片，分享时带上卡片ID
+    if (shareCardInfo?.id) {
+      return {
+        title: '送你一张佛理卡片，试试提问吧',
+        path: `/pages/index/index?cardId=${shareCardInfo.id}`,
+        imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/share/share-card.png'
+      }
+    }
+    // 默认分享
+    return {
+      title: '答案已存在，你准备好提问了吗？',
+      path: '/pages/index/index',
+      imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/share/share-card.png'
+    }
   })
 
   // 功德同步逻辑 (防抖)
@@ -274,6 +334,9 @@ export default function Index() {
       meritAdd = normal_merit;
     }
     
+    // 音效优先播放，减少感知延迟
+    playTapSound(currentStage)
+    
     setStage(currentStage);
     
     // 沉浸模式逻辑
@@ -291,8 +354,6 @@ export default function Index() {
         tapCount.current = 0;
       }, immersive_timeout);
     }
-    
-    playTapSound(currentStage)
 
     setIsAnimate(true)
     setTimeout(() => setIsAnimate(false), 100)
@@ -416,7 +477,14 @@ export default function Index() {
       
       <ParticleCanvas ref={particleRef} />
       <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
-      <DonateModal show={showDonateModal} onClose={() => setShowDonateModal(false)} userInfo={userInfo} onRefresh={init} poolCapacities={muyuConfig.pool_capacities} />
+      <DonateModal 
+        show={showDonateModal} 
+        onClose={() => { setShowDonateModal(false); setShareCardInfo(null); }} 
+        userInfo={userInfo} 
+        onRefresh={init} 
+        poolCapacities={muyuConfig.pool_capacities}
+        onCardChange={setShareCardInfo}
+      />
       <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
       <SettingModal 
         show={showSettingModal} 
@@ -435,6 +503,21 @@ export default function Index() {
           }}
         />
       )}
+      <ShareUnlockModal
+        show={showShareUnlockModal}
+        onClose={() => setShowShareUnlockModal(false)}
+        success={shareUnlockResult.success}
+        cardTitle={shareUnlockResult.cardTitle}
+      />
+      <ShareCardModal
+        show={showShareCardModal}
+        onClose={() => {
+          setShowShareCardModal(false)
+          setPendingShareCard(null)
+        }}
+        cardInfo={pendingShareCard}
+        onUnlockSuccess={init}
+      />
     </View>
   )
 }

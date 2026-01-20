@@ -1,4 +1,4 @@
-import { View, Text, Image, Button } from "@tarojs/components";
+import { View, Text, Image } from "@tarojs/components";
 import Taro from "@tarojs/taro";
 import { playClickSound } from '../../utils/clickSound'
 import './index.scss'
@@ -21,7 +21,6 @@ export default function WishModal(props: WishModalProps) {
   }
   
   const handleDonate = () => {
-    if (allCollected) return // 已集齐则不响应点击
     playClickSound()
     onDonate()
   }
@@ -31,12 +30,15 @@ export default function WishModal(props: WishModalProps) {
       <View className='modal-content' onClick={(e) => e.stopPropagation()}>
         <Image onClick={() => { playClickSound(); onClose() }} className='wish-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
         <View className='wish-btn'>
-          <View onClick={handleDonate} className='wish-btn-item'>
-            <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-fulfill.png' />
-            <Text className='wish-btn-item-text'>
-              {allCollected ? '佛理图鉴已集齐' : `捐香火，予诸佛（${meritCost}功德）`}
-            </Text>
-          </View>
+          {/* 集齐所有卡片后不显示捐香火按钮 */}
+          {!allCollected && (
+            <View onClick={handleDonate} className='wish-btn-item'>
+              <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-fulfill.png' />
+              <Text className='wish-btn-item-text'>
+                捐香火，予诸佛（{meritCost}功德）
+              </Text>
+            </View>
+          )}
           <View onClick={handleWish} className='wish-btn-item'>
             <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-mail.png' />
             <Text className='wish-btn-item-text'>

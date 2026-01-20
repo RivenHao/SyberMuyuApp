@@ -28,14 +28,15 @@ Taro.addInterceptor(interceptor)
  * @param url 接口地址 (不带 BaseUrl，例如 '/merit')
  * @param method 请求方法
  * @param data 请求参数
- * @param showLoading 是否显示 Loading
+ * @param options 额外配置项
  */
 export const request = async <T = any>(
   url: string,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   data: any = {},
-  showLoading = false
+  options: { showLoading?: boolean; showErrorToast?: boolean } = {}
 ): Promise<T> => {
+  const { showLoading = false, showErrorToast = true } = options
   if (showLoading) {
     Taro.showLoading({ title: '加载中...' })
   }
@@ -61,10 +62,12 @@ export const request = async <T = any>(
 
     // HTTP 状态码错误
     if (res.statusCode !== 200) {
-      Taro.showToast({
-        title: `网络错误 ${res.statusCode}`,
-        icon: 'none'
-      })
+      if (showErrorToast) {
+        Taro.showToast({
+          title: `网络错误 ${res.statusCode}`,
+          icon: 'none'
+        })
+      }
       return Promise.reject(res)
     }
 
@@ -76,10 +79,12 @@ export const request = async <T = any>(
         Taro.removeStorageSync('token')
       }
       
-      Taro.showToast({
-        title: res.data.msg || '请求失败',
-        icon: 'none'
-      })
+      if (showErrorToast) {
+        Taro.showToast({
+          title: res.data.msg || '请求失败',
+          icon: 'none'
+        })
+      }
       return Promise.reject(res.data)
     }
 
@@ -88,10 +93,12 @@ export const request = async <T = any>(
     if (showLoading) {
       Taro.hideLoading()
     }
-    Taro.showToast({
-      title: '网络请求异常',
-      icon: 'none'
-    })
+    if (showErrorToast) {
+      Taro.showToast({
+        title: '网络请求异常',
+        icon: 'none'
+      })
+    }
     return Promise.reject(err)
   }
 }

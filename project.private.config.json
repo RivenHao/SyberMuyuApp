@@ -18,5 +18,18 @@
     "checkInvalidKey": true,
     "ignoreDevUnusedFiles": true,
     "bigPackageSizeSupport": false
+  },
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "测试分享卡片",
+          "pathName": "pages/index/index",
+          "query": "cardId=7",
+          "scene": null,
+          "launchMode": "default"
+        }
+      ]
+    }
   }
 }
