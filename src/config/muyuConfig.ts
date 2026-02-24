@@ -8,15 +8,15 @@ export const DEFAULT_MUYU_CONFIG: MuyuConfigData = {
   // 连击阶段配置
   blue_combo: 5,        // 5连击进入蓝色阶段 (Stage 2)
   red_combo: 10,        // 10连击进入红色阶段 (Stage 3)
-  orange_combo: 15,     // 15连击进入橙色阶段 (Stage 4)
-  purple_combo: 20,     // 20连击进入紫色/第五阶段 (Stage 5)
+  orange_combo: 30,     // 15连击进入橙色阶段 (Stage 4)
+  purple_combo: 50,     // 20连击进入紫色/第五阶段 (Stage 5)
   
   // 连击节奏区间（ms）
-  combo_interval_min: 750,   // 最小间隔
-  combo_interval_max: 1500,  // 最大间隔
+  combo_interval_min: 500,   // 最小间隔
+  combo_interval_max: 1000,  // 最大间隔
   
   // 功德池容量配置（各等级）
-  pool_capacities: [10, 20, 30, 40, 50, 60, 70, 80],
+  pool_capacities: [100, 200, 300, 400, 500, 1000, 1500, 2000],
   
   // 沉浸模式配置
   immersive_tap_count: 6,    // 敲击6次触发
@@ -34,4 +34,4 @@ export const DEFAULT_MUYU_CONFIG: MuyuConfigData = {
  * 是否使用服务器配置（测试阶段开启）
  * 正式上线时改为 false
  */
-export const USE_SERVER_CONFIG = true
+export const USE_SERVER_CONFIG = false

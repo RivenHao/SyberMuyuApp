@@ -2,17 +2,18 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useLoad } from '@tarojs/taro'
 import './index.scss'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, getMuyuConfig, MuyuConfigData, checkShareCard } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
 import GalleryModal from '../../components/GalleryModal'
 import SettingModal from '../../components/SettingModal'
-import MuyuConfigModal from '../../components/MuyuConfigModal'
+// import MuyuConfigModal from '../../components/MuyuConfigModal'
 import ShareUnlockModal from '../../components/ShareUnlockModal'
 import ShareCardModal from '../../components/ShareCardModal'
 import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanvas'
-import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
+import { DEFAULT_MUYU_CONFIG } from '../../config/muyuConfig'
+// import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
 import { playClickSound, preloadClickSound } from '../../utils/clickSound'
 
 // 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
@@ -43,8 +44,9 @@ export default function Index() {
   const [showDonateModal, setShowDonateModal] = useState(false)
   const [showGalleryModal, setShowGalleryModal] = useState(false)
   const [showSettingModal, setShowSettingModal] = useState(false)
-  const [showMuyuConfigModal, setShowMuyuConfigModal] = useState(false)
-  const [muyuConfig, setMuyuConfig] = useState<MuyuConfigData>(DEFAULT_MUYU_CONFIG)
+  // const [showMuyuConfigModal, setShowMuyuConfigModal] = useState(false)
+  // const [muyuConfig, setMuyuConfig] = useState<MuyuConfigData>(DEFAULT_MUYU_CONFIG)
+  const muyuConfig = DEFAULT_MUYU_CONFIG
   const lastTapTime = useRef<number>(0)
   const comboCount = useRef<number>(0) // 连击计数器
   const pendingMerit = useRef<number>(0) // 待同步的功德
@@ -119,19 +121,20 @@ export default function Index() {
     try {
       await ensureLogin()
       
-      let config = DEFAULT_MUYU_CONFIG
-      if (USE_SERVER_CONFIG) {
-        try {
-          config = await getMuyuConfig()
-          setMuyuConfig(config)
-        } catch (err) {
-          console.error('获取木鱼配置失败，使用默认配置:', err)
-        }
-      }
+      // 服务器配置（调试时打开）
+      // let config = DEFAULT_MUYU_CONFIG
+      // if (USE_SERVER_CONFIG) {
+      //   try {
+      //     config = await getMuyuConfig()
+      //     setMuyuConfig(config)
+      //   } catch (err) {
+      //     console.error('获取木鱼配置失败，使用默认配置:', err)
+      //   }
+      // }
       
       const freshUser = await getUserInfo()
       setUserInfo(freshUser)
-      setMeritPoolMax(getPoolCapacity(freshUser.pool_level, config))
+      setMeritPoolMax(getPoolCapacity(freshUser.pool_level, muyuConfig))
       setMerit(Number(freshUser.current_merit))
       
       Taro.setStorageSync('userInfo', freshUser)
@@ -399,9 +402,11 @@ export default function Index() {
         <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/beings/index' }) }}>
           <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/live_new.png' style={{ width:'76rpx', height:'62rpx' }} />
         </View>
+        {/* 配置按钮（调试时打开）
         <View className='navbar-item' onClick={() => { playClickSound(); setShowMuyuConfigModal(true) }}>
           配置
         </View>
+        */}
       </View>
 
       <View 
@@ -466,7 +471,7 @@ export default function Index() {
         onClose={() => { setShowDonateModal(false); setShareCardInfo(null); }} 
         userInfo={userInfo} 
         onRefresh={init} 
-        poolCapacities={muyuConfig.pool_capacities}
+        poolCapacities={DEFAULT_MUYU_CONFIG.pool_capacities}
         onCardChange={setShareCardInfo}
       />
       <GalleryModal 
@@ -479,6 +484,7 @@ export default function Index() {
         onClose={() => setShowSettingModal(false)} 
         onSettingChange={setSetting}
       />
+      {/* 配置弹窗（调试时打开）
       {USE_SERVER_CONFIG && (
         <MuyuConfigModal
           show={showMuyuConfigModal}
@@ -491,6 +497,7 @@ export default function Index() {
           }}
         />
       )}
+      */}
       <ShareUnlockModal
         show={showShareUnlockModal}
         onClose={() => setShowShareUnlockModal(false)}
