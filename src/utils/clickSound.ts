@@ -20,6 +20,7 @@ export const preloadClickSound = () => {
   pool = []
   for (let i = 0; i < POOL_SIZE; i++) {
     const ctx = Taro.createInnerAudioContext()
+    ctx.startTime = 0.4
     ctx.src = CLICK_SOUND_URL
     pool.push(ctx)
   }
@@ -31,6 +32,5 @@ export const playClickSound = () => {
   const ctx = pool[index % pool.length]
   index = (index + 1) % pool.length
   ctx.stop()
-  ctx.seek(0)
   ctx.play()
 }

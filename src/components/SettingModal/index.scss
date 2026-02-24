@@ -60,6 +60,11 @@
         }
       }
 
+      &.disabled {
+        opacity: 0.4;
+        pointer-events: none;
+      }
+
       .custom-switch {
         width: 92rpx;
         height: 48rpx;

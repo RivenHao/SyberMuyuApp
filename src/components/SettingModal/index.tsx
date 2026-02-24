@@ -66,9 +66,9 @@ export default function SettingModal({ show, onClose, onSettingChange }: Setting
   const settingItems = [
     { key: 'sound', label: '音效', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-effect.png' },
     { key: 'vibration', label: '震感', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-phone.png' },
-    { key: 'bgm', label: '背景音乐', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-music.png' },
+    { key: 'bgm', label: '背景音乐', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-music.png', disabled: true },
     { key: 'immersive_mode', label: '沉浸模式', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-deep.png' },
-    { key: 'auto_click', label: '自动敲击（未开放）', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-knick.png' },
+    { key: 'auto_click', label: '自动敲击', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-knick.png', disabled: true },
   ]
 
   return (
@@ -77,14 +77,14 @@ export default function SettingModal({ show, onClose, onSettingChange }: Setting
         <Image onClick={() => { playClickSound(); onClose() }} className='setting-close' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-close.png' />
         <View className='setting-list'>
           {settingItems.map((item) => (
-            <View className='setting-item' key={item.key}>
+            <View className={`setting-item ${item.disabled ? 'disabled' : ''}`} key={item.key}>
               <View className='setting-info'>
                 <Image className='setting-icon' src={item.icon} />
                 <Text className='setting-label'>{item.label}</Text>
               </View>
               <View 
-                className={`custom-switch ${setting[item.key as keyof SettingData] ? 'active' : ''}`}
-                onClick={() => handleChange(item.key as keyof SettingData, !setting[item.key as keyof SettingData])}
+                className={`custom-switch ${setting[item.key as keyof SettingData] ? 'active' : ''} ${item.disabled ? 'disabled' : ''}`}
+                onClick={() => !item.disabled && handleChange(item.key as keyof SettingData, !setting[item.key as keyof SettingData])}
               >
                 <View className='custom-switch-thumb' />
               </View>
