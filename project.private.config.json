@@ -7,7 +7,7 @@
     "lazyloadPlaceholderEnable": false,
     "skylineRenderEnable": false,
     "preloadBackgroundData": false,
-    "autoAudits": true,
+    "autoAudits": false,
     "useApiHook": true,
     "useApiHostProcess": true,
     "showShadowRootInWxmlPanel": false,
@@ -25,7 +25,7 @@
         {
           "name": "测试分享卡片",
           "pathName": "pages/index/index",
-          "query": "cardId=7",
+          "query": "cardId=16",
           "scene": null,
           "launchMode": "default"
         }

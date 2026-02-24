@@ -4,38 +4,100 @@
   background-color: #000; // 黑色背景
   overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
-.back-btn{
+.beings-title{
   position: absolute;
   top: 6%;
-  left: 5%;
-  color: #fff;
-  font-size: 28rpx;
-  font-weight: bold;
+  left: 0%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  .beings-title-icon{
+    width: 64rpx;
+    height: 64rpx;
+  }
+  .beings-title-text{
+    color: #fff;
+    font-size: 32rpx;
+  }
 }
 
-.title{
-  position: absolute;
-  top: 6%;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #fff;
-  font-size: 40rpx;
-  font-weight: bold;
+.personal-merit-container{
+  align-self: flex-start;
+  margin-left: 68rpx;
+  display: flex;
+  flex-direction: column;
+  .personal-merit{
+    font-size: 28rpx;
+    color: #fff;
+  }
+  .personal-merit-value{
+    font-size: 40rpx;
+    color: #FFDA8A;
+  }
 }
 
-.personal-merit {
-  position: absolute;
-  top: 10%;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #fff;
+.global-merit-wrapper{
+  margin-top: 108rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  .global-merit-title{
+    font-size: 32rpx;
+    color: #fff;
+    text-align: center;
+  }
+
+  .global-merit-progress {
+    width: 324rpx;
+    height: 6rpx;
+    background: #282828;
+    border-radius: 100rpx;
+    margin-top: 20rpx;
+    overflow: hidden;
+
+    .global-merit-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #AB780A 0%, #FFDA8A 100%);
+      border-radius: 100rpx;
+      transition: width 0.3s ease;
+    }
+  }
+
+  .global-merit-value {
+    margin-top: 16rpx;
+    font-size: 24rpx;
+    color: #FFDA8A;
+    text-align: center;
+  }
+
+  .global-merit-img {
+    width: 684rpx;
+    height: 726rpx;
+  }
 }
-.global-merit {
-  position: absolute;
-  top: 20%;
-  left: 50%;
-  transform: translateX(-50%);
+
+.beings-text{
+  margin-top: 40rpx;
+  font-size: 32rpx;
+  color: #C68F42;
+}
+
+.beings-button{
+  width: 488rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  text-align: center;
+  margin-top: 60rpx;
+  background: radial-gradient(50% 50% at 50% 50%, #DABD83 0%, #C68F42 100%);
+  border-radius: 20rpx;
   color: #fff;
+  font-size: 32rpx;
 }

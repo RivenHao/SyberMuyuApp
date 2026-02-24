@@ -7,6 +7,8 @@ import './index.scss'
 class Particle {
   x: number
   y: number
+  offsetX: number  // 相对文字的偏移
+  offsetY: number
   targetX: number
   targetY: number
   size: number
@@ -14,59 +16,70 @@ class Particle {
   alpha: number
   arrived: boolean
   delay: number
-  life: number  // 生命值
+  life: number
+  flying: boolean  // 是否开始飞向目标
 
   constructor(x: number, y: number, targetX: number, targetY: number, color: string, delay: number = 0) {
     this.x = x
     this.y = y
+    this.offsetX = (Math.random() - 0.5) * 40  // 水平分散适中
+    this.offsetY = (Math.random() - 0.5) * 60  // 竖直分散更大
     this.targetX = targetX
     this.targetY = targetY
-    this.size = Math.random() * 3 + 2
+    this.size = Math.random() * 1 + 2  // 更小的粒子
     this.color = color
     this.alpha = 0
     this.arrived = false
     this.delay = delay
-    this.life = 120  // 最多存活 120 帧（约 2 秒）
+    this.life = 120
+    this.flying = false
   }
 
-  update(frameCount: number) {
-    // 延迟出现
+  update(frameCount: number, shouldFly: boolean, textX: number, textY: number) {
     if (frameCount < this.delay) return
     
-    // 生命减少
-    this.life--
-    if (this.life <= 0) {
-      this.arrived = true
-      this.alpha = 0
-      return
-    }
-    
-    // 渐显
+    // 渐显（和文字渐隐同步）
     if (this.alpha < 1 && this.life > 30) {
-      this.alpha = Math.min(1, this.alpha + 0.15)
+      this.alpha = Math.min(1, this.alpha + 0.06)
     }
     
-    // 快消失时渐隐
-    if (this.life < 30) {
-      this.alpha = Math.max(0, this.alpha - 0.05)
-    }
-
-    // 飞向目标
-    const dx = this.targetX - this.x
-    const dy = this.targetY - this.y
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    
-    if (dist < 20) {
-      // 到达目标，快速消失
-      this.arrived = true
-      this.alpha = 0
+    if (!this.flying) {
+      // 跟随文字位置（轻微漂移）
+      this.x = textX + this.offsetX
+      this.y = textY + this.offsetY
+      // 偏移慢慢扩大，产生"散开"效果
+      this.offsetX *= 1.02
+      this.offsetY *= 1.02
+      
+      if (shouldFly) {
+        this.flying = true
+      }
     } else {
-      // 飞向目标，速度随距离变化
-      const speed = Math.min(0.08, 8 / dist)
-      this.x += dx * speed
-      this.y += dy * speed
-      // 轻微曲线
-      this.x += Math.sin(frameCount * 0.1) * 0.5
+      // 飞向目标
+      this.life--
+      if (this.life <= 0) {
+        this.arrived = true
+        this.alpha = 0
+        return
+      }
+      
+      if (this.life < 30) {
+        this.alpha = Math.max(0, this.alpha - 0.05)
+      }
+
+      const dx = this.targetX - this.x
+      const dy = this.targetY - this.y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      
+      if (dist < 20) {
+        this.arrived = true
+        this.alpha = 0
+      } else {
+        const speed = Math.min(0.08, 8 / dist)
+        this.x += dx * speed
+        this.y += dy * speed
+        this.x += Math.sin(frameCount * 0.1) * 0.5
+      }
     }
   }
 
@@ -80,7 +93,6 @@ class Particle {
     ctx.globalAlpha = this.alpha
     ctx.fill()
     
-    // 发光效果
     ctx.shadowBlur = 6
     ctx.shadowColor = this.color
     ctx.fill()
@@ -102,9 +114,9 @@ interface ParticleGroup {
   textAlpha: number
   textScale: number
   color: string
-  meritValue: number  // 这次要加的功德值
-  withParticles: boolean  // 是否显示粒子效果
-  onComplete?: () => void  // 完成回调
+  meritValue: number
+  withParticles: boolean
+  onComplete?: () => void
 }
 
 export interface ParticleCanvasRef {
@@ -169,30 +181,34 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
       particleGroups.current = particleGroups.current.filter(group => {
         group.frameCount++
         
-        // 文字一直往上飘，同时渐隐
-        // 从第 45 帧开始，粒子逐渐出现并飞向目标（约 0.75s）
-        const particleStartFrame = 45
+        // 文字飘动一段时间后，开始"转化"为粒子
+        const transformStartFrame = 60  // 转化开始帧（多飘0.5s）
+        const particleFlyFrame = 90     // 粒子飞向目标帧
         
-        // 文字始终在飘动和渐隐
+        // 文字往上飘
+        group.textY -= 2.2
+        
+        // 绘制文字
         if (group.textAlpha > 0) {
-          // 文字持续往上飘（更快一点）
-          group.textY -= 2.2
-          
-          // 非连击（无粒子）时，文字多飘一会儿
-          const fadeStartFrame = group.withParticles ? 40 : 70
-          const fadeStep = group.withParticles ? 0.035 : 0.02
-          if (group.frameCount > fadeStartFrame) {
-            group.textAlpha -= fadeStep
+          // 有粒子模式：从 transformStartFrame 开始渐隐
+          // 无粒子模式：晚一点渐隐
+          if (group.withParticles) {
+            if (group.frameCount >= transformStartFrame) {
+              group.textAlpha -= 0.04  // 和粒子渐显同步
+            }
+          } else {
+            if (group.frameCount > 70) {
+              group.textAlpha -= 0.02
+            }
           }
           
           ctx.save()
-          ctx.font = 'bold 22px sans-serif'  // 字号调小
+          ctx.font = 'bold 22px sans-serif'
           ctx.fillStyle = group.color
           ctx.globalAlpha = Math.max(0, group.textAlpha)
           ctx.textAlign = 'center'
           ctx.textBaseline = 'middle'
           
-          // 文字发光
           ctx.shadowBlur = 12
           ctx.shadowColor = group.color
           ctx.fillText(group.text, group.textX, group.textY)
@@ -202,7 +218,7 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
           ctx.globalAlpha = 1
         }
 
-        // 无粒子模式：文字消失后直接移除
+        // 无粒子模式：文字消失后移除
         if (!group.withParticles) {
           if (group.textAlpha <= 0) {
             if (group.onComplete) {
@@ -213,28 +229,27 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
           return true
         }
 
-        // 有粒子模式：粒子从第 45 帧开始出现
-        if (group.frameCount >= particleStartFrame) {
-          // 更新粒子起始位置到当前文字位置
-          if (group.frameCount === particleStartFrame) {
+        // 有粒子模式：粒子和文字渐隐同步出现
+        if (group.frameCount >= transformStartFrame) {
+          // 第一帧：设置粒子初始位置到当前文字位置
+          if (group.frameCount === transformStartFrame) {
             group.particles.forEach(p => {
-              p.x = group.textX + (Math.random() - 0.5) * 40
-              p.y = group.textY + (Math.random() - 0.5) * 20
+              p.x = group.textX + (Math.random() - 0.5) * 60
+              p.y = group.textY + (Math.random() - 0.5) * 30
             })
           }
           
           let allArrived = true
-          const particleFrame = group.frameCount - particleStartFrame
+          const particleFrame = group.frameCount - transformStartFrame
+          const shouldFly = group.frameCount >= particleFlyFrame
           
           group.particles.forEach(p => {
-            p.update(particleFrame)
+            p.update(particleFrame, shouldFly, group.textX, group.textY)
             p.draw(ctx, particleFrame)
             if (!p.arrived) allArrived = false
           })
 
-          // 所有粒子消失后移除，并触发回调
           if (allArrived && group.textAlpha <= 0) {
-            // 触发完成回调（更新进度）
             if (group.onComplete) {
               group.onComplete()
             }
@@ -255,14 +270,13 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
   const emit = (x: number, y: number, targetX: number, targetY: number, text: string, color: string, withParticles: boolean, onComplete?: () => void) => {
     const particles: Particle[] = []
     if (withParticles) {
-      const count = 15 + Math.floor(Math.random() * 8)
+      const count = 25 + Math.floor(Math.random() * 10)  // 更多粒子
       for (let i = 0; i < count; i++) {
-        const delay = Math.floor(Math.random() * 20)
-        particles.push(new Particle(x, y - 20, targetX, targetY, color, delay))
+        const delay = Math.floor(Math.random() * 30)  // 延迟更分散，形成流线
+        particles.push(new Particle(x, y, targetX, targetY, color, delay))
       }
     }
 
-    // 从文字中提取数值
     const match = text.match(/\d+/)
     const meritValue = match ? parseInt(match[0]) : 1
 
@@ -272,8 +286,8 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
       frameCount: 0,
       text,
       textX: x,
-      textY: y - 20,
-      textStartY: y - 20,
+      textY: y,
+      textStartY: y,
       textAlpha: 1,
       textScale: 1,
       color,
@@ -283,7 +297,6 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
     })
   }
 
-  // 暴露方法给父组件
   useImperativeHandle(ref, () => ({
     emit
   }))
@@ -299,4 +312,3 @@ const ParticleCanvas = forwardRef<ParticleCanvasRef, object>((_, ref) => {
 })
 
 export default ParticleCanvas
-

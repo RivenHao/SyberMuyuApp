@@ -101,10 +101,10 @@ export default function DonateModal(props: DonateModalProps) {
             <>
               {cardInfo?.title && <Text className='card-title'>{cardInfo.title}</Text>}
               <View className='card-text-container'>
-                {cardInfo?.description && <Text className='card-content'>{cardInfo.description}</Text>}
+                {cardInfo?.description && <Text className='card-content'>{cardInfo.description.replace(/\\n/g, '\n')}</Text>}
                 {cardInfo?.explanation && (
                   <Text className='card-source'>
-                    {currentRarity === 3 ? '心法真诠：' : '注解：'}{cardInfo.explanation}
+                    {currentRarity === 3 ? '心法真诠：' : '注解：'}{cardInfo.explanation.replace(/\\n/g, '\n')}
                   </Text>
                 )}
               </View>

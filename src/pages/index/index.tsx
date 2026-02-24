@@ -13,7 +13,7 @@ import ShareUnlockModal from '../../components/ShareUnlockModal'
 import ShareCardModal from '../../components/ShareCardModal'
 import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanvas'
 import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
-import { playClickSound } from '../../utils/clickSound'
+import { playClickSound, preloadClickSound } from '../../utils/clickSound'
 
 // 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
 const MUYU_IMGS = {
@@ -56,7 +56,7 @@ export default function Index() {
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
   const [shareCardInfo, setShareCardInfo] = useState<any>(null) // 当前分享的卡片信息
   const [showShareUnlockModal, setShowShareUnlockModal] = useState(false) // 分享解锁结果弹窗（已拥有时显示）
-  const [shareUnlockResult, setShareUnlockResult] = useState<{ success: boolean; cardTitle?: string }>({ success: false })
+  const [shareUnlockCardTitle, setShareUnlockCardTitle] = useState<string | undefined>(undefined)
   const [showShareCardModal, setShowShareCardModal] = useState(false) // 分享卡片翻牌弹窗（未拥有时显示）
   const [pendingShareCard, setPendingShareCard] = useState<any>(null) // 待翻牌的分享卡片
   const tapCount = useRef<number>(0) // 累计敲击次数（沉浸模式用）
@@ -68,57 +68,41 @@ export default function Index() {
   const poolTarget = useRef({ x: 200, y: 100 }) // 功德池目标位置
   const muyuPos = useRef({ x: 200, y: 400 }) // 木鱼位置
 
-  // 不同连击阶段的音效上下文（小池子，允许连点时重叠播放）
-  const audioContexts = useRef<Record<ComboStage, Taro.InnerAudioContext[]>>({
-    1: [], 2: [], 3: [], 4: [], 5: []
-  })
-  const audioIndex = useRef<Record<ComboStage, number>>({
-    1: 0, 2: 0, 3: 0, 4: 0, 5: 0
-  })
+  // 音效池
+  const audioPool = useRef<Taro.InnerAudioContext[]>([])
+  const audioIndex = useRef<number>(0)
 
-  // 音效资源配置映射
-  const SOUND_URLS: Record<ComboStage, string> = {
-    1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/normal.mp3',
-    2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/normal.mp3',
-    3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/blue.mp3',
-    4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/red.mp3',
-    5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/orange.mp3'
-  }
-
-  // 初始化音频
+  // 预加载音效（页面加载时立即初始化）
   useEffect(() => {
-    const POOL_SIZE = 8
-    const stageList: ComboStage[] = [1, 2, 3, 4, 5]
-    const ctxMap = audioContexts.current
-    
-    stageList.forEach(s => {
-      const pool: Taro.InnerAudioContext[] = []
-      for (let i = 0; i < POOL_SIZE; i++) {
-        const ctx = Taro.createInnerAudioContext()
-        ctx.src = SOUND_URLS[s]
-        pool.push(ctx)
-      }
-      ctxMap[s] = pool
-    })
-    
-    return () => {
-      stageList.forEach(s => {
-        ctxMap[s].forEach(ctx => ctx.destroy())
-      })
+    // 预加载敲击音效
+    const TAP_SOUND_URL = 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/4%281%29.m4a'
+    const POOL_SIZE = 5
+    for (let i = 0; i < POOL_SIZE; i++) {
+      const ctx = Taro.createInnerAudioContext()
+      ctx.startTime = 0.2 // 跳过音频前面的静音段
+      ctx.src = TAP_SOUND_URL
+      audioPool.current.push(ctx)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
+    // 预加载按钮点击音效
+    preloadClickSound()
+    
+    // 组件卸载时清理音频
+    return () => {
+      audioPool.current.forEach(ctx => ctx.destroy())
+    }
   }, [])
 
-  // 播放敲击音效（根据当前阶段）
-  const playTapSound = (currentStage: ComboStage) => {
+  // 播放敲击音效
+  const playTapSound = () => {
     if (!setting.sound) return
-    const pool = audioContexts.current[currentStage]
+    
+    const pool = audioPool.current
     if (!pool.length) return
-    const idx = audioIndex.current[currentStage] % pool.length
-    audioIndex.current[currentStage] = idx + 1
-    const ctx = pool[idx]
-    // 直接播放，池子有8个实例，连击时轮流使用，无需 stop/seek
-    ctx.play()
+    
+    const idx = audioIndex.current % pool.length
+    audioIndex.current = idx + 1
+    pool[idx].play()
   }
 
   // 根据配置获取功德池容量
@@ -177,12 +161,10 @@ export default function Index() {
           }
         }
         if (res[1]) {
-          // 主体图 375×812，发光层 375×345，取木鱼区域顶部作为基准点
-          const woodTopRatio = 1 - (345 / 812)
-          const woodTop = res[1].top + res[1].height * woodTopRatio
+          // 主体图 375×345，取木鱼容器顶部作为文字起始基准点
           muyuPos.current = {
             x: res[1].left + res[1].width / 2,
-            y: woodTop
+            y: res[1].top
           }
         }
       })
@@ -207,10 +189,7 @@ export default function Index() {
             
             if (isOwned) {
               // 已拥有，显示提示弹窗
-              setShareUnlockResult({ 
-                success: false, 
-                cardTitle: card.title 
-              })
+              setShareUnlockCardTitle(card.title)
               setShowShareUnlockModal(true)
             } else {
               // 未拥有，显示翻牌弹窗
@@ -232,14 +211,14 @@ export default function Index() {
       return {
         title: '送你一张佛理卡片，试试提问吧',
         path: `/pages/index/index?cardId=${shareCardInfo.id}`,
-        imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/share/share-card.png'
+        imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/share-card.png'
       }
     }
     // 默认分享
     return {
-      title: '答案已存在，你准备好提问了吗？',
+      title: '攒功德去许愿，捐香火得图鉴',
       path: '/pages/index/index',
-      imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/share/share-card.png'
+      imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/share-main.png'
     }
   })
 
@@ -278,7 +257,12 @@ export default function Index() {
   }
 
   // 敲木鱼
-  const handleTap = () => {
+  const handleTap = (e: any) => {
+    // 防止多指同时触发：只响应单指触摸
+    if (e.touches && e.touches.length > 1) {
+      return
+    }
+    
     const now = Date.now();
     const interval = now - lastTapTime.current;
     
@@ -335,7 +319,7 @@ export default function Index() {
     }
     
     // 音效优先播放，减少感知延迟
-    playTapSound(currentStage)
+    playTapSound()
     
     setStage(currentStage);
     
@@ -485,7 +469,11 @@ export default function Index() {
         poolCapacities={muyuConfig.pool_capacities}
         onCardChange={setShareCardInfo}
       />
-      <GalleryModal show={showGalleryModal} onClose={() => setShowGalleryModal(false)} />
+      <GalleryModal 
+        show={showGalleryModal} 
+        onClose={() => setShowGalleryModal(false)} 
+        onCardSelect={setShareCardInfo}
+      />
       <SettingModal 
         show={showSettingModal} 
         onClose={() => setShowSettingModal(false)} 
@@ -506,8 +494,7 @@ export default function Index() {
       <ShareUnlockModal
         show={showShareUnlockModal}
         onClose={() => setShowShareUnlockModal(false)}
-        success={shareUnlockResult.success}
-        cardTitle={shareUnlockResult.cardTitle}
+        cardTitle={shareUnlockCardTitle}
       />
       <ShareCardModal
         show={showShareCardModal}

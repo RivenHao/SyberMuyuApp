@@ -1,10 +1,9 @@
 import { useState } from "react";
-import Taro, { useDidShow } from "@tarojs/taro";
+import Taro, { useDidShow, useShareAppMessage } from "@tarojs/taro";
+import { View, Text, Image, Button } from "@tarojs/components";
 import { playClickSound } from "../../utils/clickSound";
-
-import { View, Text } from "@tarojs/components";
-import './index.scss';
 import { getAllMerit, getUserInfo } from "../../apis";
+import './index.scss';
 
 export default function Beings() {
   const [globalMerit, setGlobalMerit] = useState<number>(0);
@@ -19,12 +18,41 @@ export default function Beings() {
   useDidShow(() => {
     init()
   })
+
+  // 分享给好友
+  useShareAppMessage(() => {
+    return {
+      title: '攒功德去许愿，捐香火得图鉴',
+      path: '/pages/index/index',
+      imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/share-main.png'
+    }
+  })
   return (
     <View className='index-page'>
-      <View className='back-btn' onClick={() => { playClickSound(); Taro.navigateBack() }}>返回</View>
-      <View className='title'>众生</View>
-      <Text className='personal-merit'>个人历史总功德：{personalMerit}</Text>
-      <Text className='global-merit'>全服功德池：{globalMerit}</Text>
+      <View className='beings-title' onClick={() => { playClickSound(); Taro.navigateBack() }}>
+        <Image className='beings-title-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/back.png' />
+        <Text className='beings-title-text'>返回</Text>
+      </View>
+
+      <View className='personal-merit-container'>
+        <Text className='personal-merit'>我累计贡献的功德</Text>
+        <Text className='personal-merit-value'>{personalMerit}</Text>
+      </View>
+      
+      <View className='global-merit-wrapper'>
+        <Text className='global-merit-title'>众生功德池</Text>
+        <View className='global-merit-progress'>
+          <View 
+            className='global-merit-progress-bar' 
+            style={{ width: `${Math.min((globalMerit / 100000000) * 100, 100)}%` }}
+          />
+        </View>
+        <Text className='global-merit-value'>{globalMerit}/100000000</Text>
+        <Image className='global-merit-img' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/beings.png' />
+      </View>
+
+      <Text className='beings-text'>攒满功德池，会有什么事情发生呢？</Text>
+      <Button className='beings-button' openType='share' onClick={() => playClickSound()}>邀人行善</Button>
     </View>
   )
 }
