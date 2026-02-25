@@ -66,8 +66,8 @@ export default function SettingModal({ show, onClose, onSettingChange }: Setting
   const settingItems = [
     { key: 'sound', label: '音效', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-effect.png' },
     { key: 'vibration', label: '震感', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-phone.png' },
-    { key: 'bgm', label: '背景音乐', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-music.png', disabled: true },
     { key: 'immersive_mode', label: '沉浸模式', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-deep.png' },
+    { key: 'bgm', label: '背景音乐', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-music.png', disabled: true },
     { key: 'auto_click', label: '自动敲击', icon: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/set-knick.png', disabled: true },
   ]
 

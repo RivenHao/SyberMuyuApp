@@ -48,6 +48,7 @@
         border: 2rpx solid linear-gradient(143.4deg, #B7B5AF 3.27%, #88A39D 98.29%);
         border-radius: 20rpx;
         box-sizing: border-box;
+
         .gallery-card-item {
             width: 150rpx;
             height: 166rpx;
@@ -138,6 +139,7 @@
     // 品级1 - 普通
     &.rarity-1 {
         background-image: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/front_new1.png');
+
         .gallery-card-title {
             color: #023945;
         }
@@ -146,6 +148,7 @@
     // 品级2 - 稀有
     &.rarity-2 {
         background-image: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/front_new2.png');
+
         .gallery-card-title {
             color: #023945;
         }
@@ -154,6 +157,7 @@
     // 品级3 - 传说
     &.rarity-3 {
         background-image: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/front_new3.png');
+
         .gallery-card-title {
             color: #5A4F00;
         }
@@ -185,18 +189,38 @@
         font-size: 32rpx;
         line-height: 1.8125;
         color: #000000;
-        text-align: left;
+        text-align: center;
         white-space: pre-line;
     }
 
-    .gallery-card-source {
-        font-family: 'CardFont', "PingFang SC", sans-serif;
-        margin-top: 24rpx;
-        font-size: 28rpx;
-        line-height: 1.64;
-        color: #000000;
-        text-align: left;
-        font-style: normal;
+    .gallery-card-explanation {
+        position: relative;
+        width: 514rpx;
+        height: 234rpx;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 68rpx;
+        border-radius: 8rpx;
+        padding: 16rpx;
+        box-sizing: border-box;
+        .gallery-card-source {
+            font-family: 'CardFont', "PingFang SC", sans-serif;
+            margin-top: 24rpx;
+            font-size: 28rpx;
+            line-height: 1.64;
+            color: #000000;
+            text-align: left;
+            font-style: normal;
+        }
+
+        .gallery-card-icon {
+            position: absolute;
+            top: 10rpx;
+            left: 10rpx;
+            height: 36rpx;
+            width: auto;
+        }
     }
 }
 
@@ -218,6 +242,8 @@
         font-size: 28rpx;
         color: #000;
         font-weight: 500;
+        min-height: 88rpx;
+        padding: 0 20rpx;
 
         &:active {
             opacity: 0.8;
@@ -235,7 +261,7 @@
         margin: 0;
         border: none;
         line-height: 80rpx;
-        
+
         &::after {
             border: none;
         }

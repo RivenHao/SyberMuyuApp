@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useLoad } from '@tarojs/taro'
 import './index.scss'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getShowWish } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
@@ -61,6 +61,7 @@ export default function Index() {
   const [shareUnlockCardTitle, setShareUnlockCardTitle] = useState<string | undefined>(undefined)
   const [showShareCardModal, setShowShareCardModal] = useState(false) // 分享卡片翻牌弹窗（未拥有时显示）
   const [pendingShareCard, setPendingShareCard] = useState<any>(null) // 待翻牌的分享卡片
+  const [showWish, setShowWish] = useState(true) // 许愿还愿功能开关
   const tapCount = useRef<number>(0) // 累计敲击次数（沉浸模式用）
   const immersiveTimer = useRef<any>(null) // 沉浸模式恢复定时器
   const comboResetTimer = useRef<any>(null) // 连击重置定时器
@@ -77,12 +78,17 @@ export default function Index() {
   // 预加载音效（页面加载时立即初始化）
   useEffect(() => {
     // 预加载敲击音效
-    const TAP_SOUND_URL = 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/audio/4%281%29.m4a'
-    const POOL_SIZE = 5
+    const TAP_SOUND_URL = '/assets/audio/tap.m4a'
+    // 池子大小 6，确保连点时不会轮转到还在播放的 context
+    const POOL_SIZE = 6
     for (let i = 0; i < POOL_SIZE; i++) {
       const ctx = Taro.createInnerAudioContext()
       ctx.startTime = 0.2 // 跳过音频前面的静音段
       ctx.src = TAP_SOUND_URL
+      // 播完后自动 seek 回起点，下次 play 无需 stop
+      ctx.onEnded(() => {
+        ctx.seek(0.2)
+      })
       audioPool.current.push(ctx)
     }
     
@@ -102,6 +108,9 @@ export default function Index() {
     const pool = audioPool.current
     if (!pool.length) return
     
+    // 纯轮转：不 stop 当前正在播的，直接用下一个 context
+    // stop() + seek() 在真机上是异步的，会引入几十ms延迟
+    // 池子有 5 个 context，足够覆盖连点间隔
     const idx = audioIndex.current % pool.length
     audioIndex.current = idx + 1
     pool[idx].play()
@@ -145,6 +154,14 @@ export default function Index() {
       
       const galleryRes = await getUserGalleryList()
       setAllCollected(galleryRes.ownedNum === galleryRes.total)
+      
+      // 5. 获取许愿功能开关
+      try {
+        const wishConfig = await getShowWish()
+        setShowWish(wishConfig.show_wish)
+      } catch (err) {
+        console.error('获取许愿开关失败:', err)
+      }
     } catch (err) {
       console.error('初始化失败:', err)
     }
@@ -396,9 +413,11 @@ export default function Index() {
         <View className='navbar-item' onClick={() => { playClickSound(); setShowGalleryModal(true) }}>
           <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/catlog_new.png' style={{ width:'72rpx', height:'62rpx' }} />
         </View>
-        <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/fulfill/index' }) }}>
-          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/wish_new.png' style={{ width:'80rpx', height:'62rpx' }} />
-        </View>
+        {showWish && (
+          <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/fulfill/index' }) }}>
+            <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/wish_new.png' style={{ width:'80rpx', height:'62rpx' }} />
+          </View>
+        )}
         <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/beings/index' }) }}>
           <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/live_new.png' style={{ width:'76rpx', height:'62rpx' }} />
         </View>
@@ -415,7 +434,7 @@ export default function Index() {
       >
         <View className='merit-pool' style={{ borderColor: merit >= meritPoolMax ? '#FDC74E' : '#454545' }}>
           <View className='merit-pool-current' style={{ width: `${merit >= meritPoolMax ? 100 : (merit / meritPoolMax) * 100}%` }} />
-          { merit >= meritPoolMax && (
+          { merit >= meritPoolMax && showWish && (
             <>
               <Text className={`merit-pool-title ${immersiveHidden ? 'immersive-hidden' : ''}`}>池已满，点击祈愿</Text>
             </>
@@ -465,7 +484,7 @@ export default function Index() {
       </View>
       
       <ParticleCanvas ref={particleRef} />
-      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
+      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} showWish={showWish} />
       <DonateModal 
         show={showDonateModal} 
         onClose={() => { setShowDonateModal(false); setShareCardInfo(null); }} 

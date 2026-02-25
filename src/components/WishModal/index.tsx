@@ -9,9 +9,10 @@ interface WishModalProps {
   onDonate: () => void
   meritCost: number
   allCollected?: boolean // 是否已集齐所有佛理图鉴
+  showWish?: boolean // 是否展示祈愿/捐香火按钮
 }
 export default function WishModal(props: WishModalProps) {
-  const { show, onClose, onDonate, meritCost, allCollected = false } = props
+  const { show, onClose, onDonate, meritCost, allCollected = false, showWish = true } = props
   if (!show) return null
   
   const handleWish = () => {
@@ -39,12 +40,14 @@ export default function WishModal(props: WishModalProps) {
               </Text>
             </View>
           )}
-          <View onClick={handleWish} className='wish-btn-item'>
-            <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-mail.png' />
-            <Text className='wish-btn-item-text'>
-              用功德，发愿心（{meritCost}功德）
-            </Text>
-          </View>
+          {showWish && (
+            <View onClick={handleWish} className='wish-btn-item'>
+              <Image className='wish-btn-item-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/wish-mail.png' />
+              <Text className='wish-btn-item-text'>
+                用功德，发愿心（{meritCost}功德）
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     </View>

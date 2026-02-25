@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, Text, Button } from "@tarojs/components";
+import { View, Text, Image, Button } from "@tarojs/components";
 import './index.scss'
 import { unlockCardByShare } from "../../apis";
 import { playClickSound } from '../../utils/clickSound'
@@ -69,11 +69,14 @@ export default function ShareCardModal(props: ShareCardModalProps) {
             <>
               {cardInfo?.title && <Text className='card-title'>{cardInfo.title}</Text>}
               <View className='card-text-container'>
-                {cardInfo?.description && <Text className='card-content'>{cardInfo.description.replace(/\\n/g, '\n')}</Text>}
+                {cardInfo?.description && <Text className='card-content'>{cardInfo.description.replace(/\/n/g, '\n')}</Text>}
                 {cardInfo?.explanation && (
-                  <Text className='card-source'>
-                    {currentRarity === 3 ? '心法真诠：' : '注解：'}{cardInfo.explanation.replace(/\\n/g, '\n')}
-                  </Text>
+                  <View className="card-explanation" style={currentRarity === 3 ? {background: '#857F4433'}: {background: '#44565C33'}}>
+                    <Image className='card-explanation-icon' mode='heightFix' src={currentRarity === 3 ? "https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/xinfa.png" : "https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/zujie.png"}/>
+                    <Text className='card-source'>
+                      {cardInfo.explanation.replace(/\/n/g, '\n')}
+                    </Text>
+                  </View>
                 )}
               </View>
             </>

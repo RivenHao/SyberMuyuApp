@@ -131,14 +131,16 @@ export default function GalleryModal({ show, onClose, onCardSelect }: GalleryMod
               <View className='gallery-card-text'>
                 {selectedCard.description && (
                   <Text className='gallery-card-content'>
-                    {selectedCard.description.replace(/\\n/g, '\n')}
+                    {selectedCard.description.replace(/\/n/g, '\n')}
                   </Text>
                 )}
                 {selectedCard.explanation && (
-                  <Text className='gallery-card-source'>
-                    {selectedCard.rarity === 3 ? '心法真诠：' : '注解：'}
-                    {selectedCard.explanation.replace(/\\n/g, '\n')}
-                  </Text>
+                  <View className="gallery-card-explanation" style={selectedCard.rarity === 3 ? {background: '#857F4433'}: {background: '#44565C33'}}>
+                    <Image className='gallery-card-icon' mode='heightFix' src={selectedCard.rarity === 3 ? "https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/xinfa.png" : "https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/zujie.png"}/>
+                    <Text className='gallery-card-source'>
+                      {selectedCard.explanation.replace(/\/n/g, '\n')}
+                    </Text>
+                  </View>
                 )}
               </View>
             </View>

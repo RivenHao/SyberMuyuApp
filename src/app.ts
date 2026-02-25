@@ -48,7 +48,7 @@ function App({ children }: PropsWithChildren<any>) {
     Taro.loadFontFace({
       global: true,
       family: 'CardFont',
-      source: 'url("https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/ziti.ttf")',
+      source: 'url("https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/new_ziti.ttf")',
       success: () => console.log('字体加载成功'),
       fail: (err) => console.log('字体加载失败', err)
     })

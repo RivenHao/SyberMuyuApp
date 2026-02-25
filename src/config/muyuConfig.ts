@@ -7,9 +7,9 @@ import { MuyuConfigData } from '../apis/muyuConfig'
 export const DEFAULT_MUYU_CONFIG: MuyuConfigData = {
   // 连击阶段配置
   blue_combo: 5,        // 5连击进入蓝色阶段 (Stage 2)
-  red_combo: 10,        // 10连击进入红色阶段 (Stage 3)
-  orange_combo: 30,     // 15连击进入橙色阶段 (Stage 4)
-  purple_combo: 50,     // 20连击进入紫色/第五阶段 (Stage 5)
+  red_combo: 15,        // 10连击进入红色阶段 (Stage 3)
+  orange_combo: 45,     // 15连击进入橙色阶段 (Stage 4)
+  purple_combo: 95,     // 20连击进入紫色/第五阶段 (Stage 5)
   
   // 连击节奏区间（ms）
   combo_interval_min: 500,   // 最小间隔

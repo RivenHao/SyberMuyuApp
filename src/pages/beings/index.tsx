@@ -44,10 +44,10 @@ export default function Beings() {
         <View className='global-merit-progress'>
           <View 
             className='global-merit-progress-bar' 
-            style={{ width: `${Math.min((globalMerit / 100000000) * 100, 100)}%` }}
+            style={{ width: `${Math.min((globalMerit / 1000000) * 100, 100)}%` }}
           />
         </View>
-        <Text className='global-merit-value'>{globalMerit}/100000000</Text>
+        <Text className='global-merit-value'>{globalMerit}/1000000</Text>
         <Image className='global-merit-img' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/beings.png' />
       </View>
 

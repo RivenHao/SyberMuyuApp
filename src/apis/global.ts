@@ -4,3 +4,8 @@ import { get } from '../utils/request'
 export const getAllMerit = () => {
   return get('/globalStats/getAllMerit')
 }
+
+// 获取许愿功能开关
+export const getShowWish = (): Promise<{ show_wish: boolean }> => {
+  return get('/globalStats/getShowWish')
+}

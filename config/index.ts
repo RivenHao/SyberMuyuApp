@@ -24,6 +24,7 @@ export default defineConfig<'vite'>(async (merge) => {
     },
     copy: {
       patterns: [
+        { from: 'src/assets/audio/', to: 'dist/assets/audio/', ignore: ['*.js'] }
       ],
       options: {
       }

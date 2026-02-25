@@ -9,7 +9,7 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  
+
   // 创建 3D 空间
   perspective: 1000px;
 }
@@ -31,7 +31,7 @@
   font-size: 36rpx;
   font-weight: 500;
   text-align: center;
-  
+
   .sub-hint {
     margin-top: 16rpx;
     font-size: 28rpx;
@@ -45,7 +45,7 @@
   width: 622rpx;
   height: 944rpx;
   position: relative;
-  
+
   // 保持子元素的 3D 变换
   transform-style: preserve-3d;
   transition: transform 0.8s ease;
@@ -72,7 +72,7 @@
   background-size: 100% 100%;
   background-repeat: no-repeat;
   background-position: center;
-  
+
   // 隐藏背面
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
@@ -87,7 +87,7 @@
 .card-front {
   // 正面需要预先翻转，这样翻过来后才是正的
   transform: rotateY(180deg);
-  
+
   // 改为相对定位，子元素绝对定位
   position: absolute;
   top: 0;
@@ -97,6 +97,7 @@
   // 品级1 - 普通
   &.rarity-1 {
     background-image: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/front_new1.png');
+
     .card-title {
       color: #023945;
     }
@@ -105,6 +106,7 @@
   // 品级2 - 稀有
   &.rarity-2 {
     background-image: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/front_new2.png');
+
     .card-title {
       color: #023945;
     }
@@ -113,6 +115,7 @@
   // 品级3 - 传说
   &.rarity-3 {
     background-image: url('https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/front_new3.png');
+
     .card-title {
       color: #5A4F00;
     }
@@ -148,19 +151,40 @@
     font-size: 32rpx;
     line-height: 1.8125;
     color: #000000;
-    text-align: left;
+    text-align: center;
     white-space: pre-line;
   }
 
-  // 注解：与文案间距 24rpx
-  .card-source {
-    font-family: 'CardFont', "PingFang SC", sans-serif;
-    margin-top: 24rpx;
-    font-size: 28rpx;
-    line-height: 1.64;
-    color: #000000;
-    text-align: left;
-    font-style: normal;
+  // 注解区块
+  .card-explanation {
+    position: relative;
+    width: 514rpx;
+    height: 234rpx;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 68rpx;
+    border-radius: 8rpx;
+    padding: 16rpx;
+    box-sizing: border-box;
+
+    .card-source {
+      font-family: 'CardFont', "PingFang SC", sans-serif;
+      margin-top: 24rpx;
+      font-size: 28rpx;
+      line-height: 1.64;
+      color: #000000;
+      text-align: left;
+      font-style: normal;
+    }
+
+    .card-explanation-icon {
+      position: absolute;
+      top: 10rpx;
+      left: 10rpx;
+      height: 36rpx;
+      width: auto;
+    }
   }
 }
 
@@ -169,6 +193,7 @@
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -179,8 +204,8 @@
   display: flex;
   justify-content: space-between;
   margin-top: 40rpx;
-  gap:36rpx;
-  
+  gap: 36rpx;
+
   // 延迟 0.8s（等翻转动画完成）后淡入
   opacity: 0;
   animation: btn-fade-in 0.3s ease forwards;
@@ -197,6 +222,8 @@
     font-size: 28rpx;
     color: #000;
     font-weight: 500;
+    min-height: 88rpx;
+    padding: 0 20rpx;
 
     &:active {
       opacity: 0.8;
@@ -215,7 +242,7 @@
     margin: 0;
     border: none;
     line-height: 80rpx;
-    
+
     &::after {
       border: none;
     }

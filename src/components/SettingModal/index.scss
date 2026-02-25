@@ -26,6 +26,10 @@
     position: absolute;
     top: 3.32vh;
     right: 9.6vw;
+    padding: 20rpx;
+    margin-top: -20rpx;
+    margin-right: -20rpx;
+    box-sizing: content-box;
   }
 
   .setting-list {
