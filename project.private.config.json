@@ -23,11 +23,18 @@
     "miniprogram": {
       "list": [
         {
+          "name": "收到祝福",
+          "pathName": "pages/index/index",
+          "query": "wish_id=3",
+          "scene": null,
+          "launchMode": "default"
+        },
+        {
           "name": "测试分享卡片",
           "pathName": "pages/index/index",
           "query": "cardId=16",
-          "scene": null,
-          "launchMode": "default"
+          "launchMode": "default",
+          "scene": null
         }
       ]
     }

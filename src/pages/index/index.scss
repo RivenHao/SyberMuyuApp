@@ -151,27 +151,22 @@
   
   // Stage 5: 红橙色系 (包含所有层)
   &.stage-5 {
-    .layer-base.show { animation: shell-stage5 3s ease-in-out infinite; }
     .light-bottom { animation: light-s5-bottom 3s ease-in-out infinite; }
     .light-center { animation: light-s5-center 3s ease-in-out infinite; }
     .light-front  { animation: light-s5-front 3s ease-in-out infinite; }
     .light-top    { animation: light-s5-top 3s ease-in-out infinite; }
   }
   
-  // 兼容其他 Stage
   &.stage-4 {
-    .layer-base.show { animation: shell-stage4 3s ease-in-out infinite; }
     .light-bottom { animation: light-s4-bottom 3s ease-in-out infinite; }
     .light-center { animation: light-s4-center 3s ease-in-out infinite; }
     .light-front  { animation: light-s4-front 3s ease-in-out infinite; }
   }
   &.stage-3 {
-    .layer-base.show { animation: shell-stage3 3s ease-in-out infinite; }
     .light-bottom { animation: light-s3-bottom 3s ease-in-out infinite; }
     .light-center { animation: light-s3-center 3s ease-in-out infinite; }
   }
   &.stage-2 {
-    .layer-base.show { animation: shell-stage2 3s ease-in-out infinite; }
     .light-bottom { animation: light-s2-bottom 3s ease-in-out infinite; }
   }
 }
@@ -212,80 +207,54 @@
   50% { opacity: 1; transform: translateX(-50%) scale(1.08); }
 }
 
-// ========== 动画关键帧 (Keyframes) - Filter 方案 ==========
+// ========== 动画关键帧 - 纯 opacity 呼吸，避免 filter 开销 ==========
 
 // Stage 2
-@keyframes shell-stage2 {
-  0%, 100% { filter: none; }
-  50% { filter: none; }
-}
 @keyframes light-s2-bottom {
-  // #88e1ff (Cyan-Blue)
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 
 // Stage 3
-@keyframes shell-stage3 {
-  0%, 100% { filter: none; }
-  50% { filter: none; }
-}
 @keyframes light-s3-bottom {
-  // #bcd474 (Yellow-Green)
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 @keyframes light-s3-center {
-  // #c9ffdb (Light Green)
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 
 // Stage 4
-@keyframes shell-stage4 {
-  0%, 100% { filter: none; }
-  50% { filter: none; }
-}
 @keyframes light-s4-bottom {
-  // #edd267 (Gold)
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 @keyframes light-s4-center {
-  // #e4ffa6 (Light Yellow)
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 @keyframes light-s4-front {
-  // #ffd996 (Pale Orange)
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 
 // Stage 5
-@keyframes shell-stage5 {
-  0%, 100% { filter: none; }
-  50% { filter: none; }
-}
 @keyframes light-s5-bottom {
-  // #fff204 (Yellow) - 纯黄色，hue-rotate 接近0，高饱和
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 @keyframes light-s5-center {
-  // #ffa765 (Orange) - 橙色，hue-rotate 负值偏红
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 @keyframes light-s5-front {
-  // #ffd35a (Golden Yellow) - 金黄色
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 @keyframes light-s5-top {
-  // #ffc145 (Golden Orange) - 金橙色
-  0%, 100% { opacity: 0.2; filter: none; }
-  50% { opacity: 1; filter: none; }
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
 }
 
 // 漂浮文字 "功德+1" (保留不变)
@@ -339,5 +308,59 @@
   100% {
     transform: translate(-50%, -400rpx); // 向上漂浮 400rpx
     opacity: 0;
+  }
+}
+
+// 分享心愿弹窗
+.shared-wish-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.shared-wish-content {
+  width: 560rpx;
+  background: #1a1a2e;
+  border: 2rpx solid rgba(194, 173, 61, 0.4);
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.shared-wish-from {
+  color: #C7C099;
+  font-size: 30rpx;
+  margin-bottom: 40rpx;
+}
+
+.shared-wish-text {
+  color: #fff;
+  font-size: 36rpx;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 50rpx;
+}
+
+.shared-wish-btn {
+  width: 400rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  background: radial-gradient(50% 50% at 50% 50%, #CCBF78 0%, #C2AD3D 100%);
+  border-radius: 16rpx;
+  color: #fff;
+  font-size: 30rpx;
+
+  &:active {
+    opacity: 0.8;
   }
 }

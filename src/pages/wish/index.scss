@@ -24,6 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 20;
   .wish-title-icon{
     width: 64rpx;
     height: 64rpx;
@@ -141,4 +142,270 @@
   border: 2rpx solid #C2AD3E;
   background: transparent;
   color: #B59F30;
+}
+
+// 大类选择
+.wish-category-list {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 0 40rpx;
+}
+
+.wish-category-title {
+  color: #C7C099;
+  font-size: 36rpx;
+  margin-bottom: 40rpx;
+}
+
+.wish-category-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20rpx 24rpx;
+  width: 100%;
+}
+
+.wish-category-item {
+  position: relative;
+  width: 260rpx;
+  height: 340rpx;
+
+  &:active {
+    opacity: 0.8;
+    transform: scale(0.96);
+  }
+
+  // 错落排列：每张卡片不同的水平+垂直偏移，像随意挂着一样
+  &.wish-category-item-0 {
+    margin-top: 40rpx;
+    margin-left: 20rpx;
+    transform: rotate(-3deg);
+  }
+  &.wish-category-item-1 {
+    margin-top: -10rpx;
+    margin-right: 60rpx;
+    transform: rotate(2deg);
+  }
+  &.wish-category-item-2 {
+    margin-top: 20rpx;
+    margin-left: -90rpx;
+    transform: rotate(2deg);
+  }
+  &.wish-category-item-3 {
+    margin-top: -30rpx;
+    margin-right: -20rpx;
+    transform: rotate(-2deg);
+  }
+  &.wish-category-item-4 {
+    margin-top: 50rpx;
+    margin-left: 36rpx;
+    transform: rotate(-1deg);
+  }
+  &.wish-category-item-5 {
+    margin-top: 0rpx;
+    margin-right: 16rpx;
+    transform: rotate(3deg);
+  }
+}
+
+.wish-category-item-bg {
+  width: 100%;
+  height: 100%;
+}
+
+.wish-category-item-content {
+  position: absolute;
+  top: 30%;
+  left: 0;
+  width: 100%;
+  height: 60%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.wish-category-name {
+  color: #6E4B00;
+  font-size: 30rpx;
+}
+
+// 心愿详情展示
+.wish-detail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100vh;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 2vh;
+}
+
+// 祈愿牌卡片（和还愿页一致）
+.wish-card {
+  position: relative;
+  width: 63.47vw;
+  height: 68vh;
+
+  .wish-card-bg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .wish-card-content {
+    position: absolute;
+    top: 30%;
+    left: 0;
+    width: 100%;
+    height: 60%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+
+    .wish-text {
+      width: 80%;
+      font-size: 32rpx;
+      color: #000;
+      text-align: center;
+      line-height: 1.6;
+    }
+  }
+}
+
+// 换一个按钮
+.wish-shuffle-btn {
+  margin-top: 24rpx;
+  margin-bottom: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 28rpx;
+  text-align: center;
+  opacity: 0;
+
+  &:active {
+    opacity: 0.6;
+  }
+}
+
+// 底部按钮组：送给好友（左） + 收下愿望（右）
+.wish-bottom-actions {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 24rpx;
+  padding: 0 40rpx;
+  opacity: 0;
+  box-sizing: border-box;
+}
+
+// ========== 动画 ==========
+
+// 被点击的卡片：向下掉落
+.wish-card--drop {
+  animation: cardDrop 0.8s ease-in forwards;
+}
+
+@keyframes cardDrop {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(120vh);
+  }
+}
+
+// 其他卡片：淡出
+.wish-card--fadeout {
+  animation: cardFadeOut 0.6s ease-out forwards;
+}
+
+// 标题淡出
+.wish-title--fadeout {
+  animation: cardFadeOut 0.3s ease-out forwards;
+}
+
+@keyframes cardFadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+// 详情卡片：从上方掉入前的初始状态
+.wish-card--before-enter {
+  opacity: 0;
+  transform: translateY(-100vh);
+}
+
+// 详情卡片：从上方掉入
+.wish-card--enter {
+  animation: cardDropIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes cardDropIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-100vh);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(10rpx);
+  }
+  80% {
+    transform: translateY(-8rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 按钮淡入
+.wish-btn--fadein {
+  animation: btnFadeIn 0.4s 0.4s ease-out forwards;
+}
+
+@keyframes btnFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.wish-action-btn {
+  flex: 1;
+  height: 96rpx;
+  line-height: 96rpx;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  text-align: center;
+  background: #fff;
+  color: #000;
+  margin: 0;
+  padding: 0;
+
+  &::after {
+    border: none;
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
 }

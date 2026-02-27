@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useLoad } from '@tarojs/taro'
 import './index.scss'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getShowWish } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getSharedWish, receiveSharedWish } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
@@ -19,11 +19,11 @@ import { playClickSound, preloadClickSound } from '../../utils/clickSound'
 // 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
 const MUYU_IMGS = {
   body: {
-    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-1.png',
-    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-2.png',
-    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-3.png',
-    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-4.png',
-    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-5.png',
+    s1: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-1_new.png',
+    s2: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-2_new.png',
+    s3: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-3_new.png',
+    s4: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-4_new.png',
+    s5: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-body-5_new.png',
   },
   parts: {
     bottom: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/muyu-bottom.png',
@@ -53,7 +53,8 @@ export default function Index() {
   const syncTimer = useRef<any>(null) // 同步定时器
   const [stage, setStage] = useState<ComboStage>(1) // 默认为阶段 1
   const [userInfo, setUserInfo] = useState<any>(null)
-  const [setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
+  const [_setting, setSetting] = useState<SettingData>({ sound: true, vibration: true })
+  const settingRef = useRef<SettingData>({ sound: true, vibration: true })
   const [immersiveHidden, setImmersiveHidden] = useState(false) // 沉浸模式是否隐藏UI
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
   const [shareCardInfo, setShareCardInfo] = useState<any>(null) // 当前分享的卡片信息
@@ -61,10 +62,13 @@ export default function Index() {
   const [shareUnlockCardTitle, setShareUnlockCardTitle] = useState<string | undefined>(undefined)
   const [showShareCardModal, setShowShareCardModal] = useState(false) // 分享卡片翻牌弹窗（未拥有时显示）
   const [pendingShareCard, setPendingShareCard] = useState<any>(null) // 待翻牌的分享卡片
-  const [showWish, setShowWish] = useState(true) // 许愿还愿功能开关
+  const [showSharedWishModal, setShowSharedWishModal] = useState(false) // 分享心愿弹窗
+  const [sharedWishInfo, setSharedWishInfo] = useState<any>(null) // 分享心愿信息
   const tapCount = useRef<number>(0) // 累计敲击次数（沉浸模式用）
   const immersiveTimer = useRef<any>(null) // 沉浸模式恢复定时器
   const comboResetTimer = useRef<any>(null) // 连击重置定时器
+  const animateTimer = useRef<any>(null) // 缩放动画定时器
+  const stageRef = useRef<ComboStage>(1) // 用 ref 跟踪阶段，避免不必要的 re-render
   
   // 粒子效果相关
   const particleRef = useRef<ParticleCanvasRef>(null)
@@ -103,7 +107,7 @@ export default function Index() {
 
   // 播放敲击音效
   const playTapSound = () => {
-    if (!setting.sound) return
+    if (!settingRef.current.sound) return
     
     const pool = audioPool.current
     if (!pool.length) return
@@ -150,18 +154,11 @@ export default function Index() {
       
       const settingInfo = await getSetting()
       setSetting(settingInfo)
+      settingRef.current = settingInfo
       Taro.setStorageSync('setting', settingInfo)
       
       const galleryRes = await getUserGalleryList()
       setAllCollected(galleryRes.ownedNum === galleryRes.total)
-      
-      // 5. 获取许愿功能开关
-      try {
-        const wishConfig = await getShowWish()
-        setShowWish(wishConfig.show_wish)
-      } catch (err) {
-        console.error('获取许愿开关失败:', err)
-      }
     } catch (err) {
       console.error('初始化失败:', err)
     }
@@ -192,11 +189,10 @@ export default function Index() {
   })
 
   // 处理分享链接进入时的卡片展示
-  useLoad((options: { cardId?: string }) => {
+  useLoad((options: { cardId?: string; wish_id?: string }) => {
     if (options.cardId) {
       const cardId = Number(options.cardId)
       if (cardId > 0) {
-        // 延迟执行，等待登录完成
         setTimeout(async () => {
           try {
             const result: any = await checkShareCard(cardId)
@@ -208,16 +204,30 @@ export default function Index() {
             }
             
             if (isOwned) {
-              // 已拥有，显示提示弹窗
               setShareUnlockCardTitle(card.title)
               setShowShareUnlockModal(true)
             } else {
-              // 未拥有，显示翻牌弹窗
               setPendingShareCard(card)
               setShowShareCardModal(true)
             }
           } catch (err: any) {
             console.log('检查卡片失败:', err?.msg || err)
+          }
+        }, 500)
+      }
+    }
+
+    // 处理分享心愿链接
+    if (options.wish_id) {
+      const wishId = Number(options.wish_id)
+      if (wishId > 0) {
+        setTimeout(async () => {
+          try {
+            const data = await getSharedWish(wishId)
+            setSharedWishInfo(data)
+            setShowSharedWishModal(true)
+          } catch (err: any) {
+            console.log('获取分享心愿失败:', err?.msg || err)
           }
         }, 500)
       }
@@ -279,101 +289,93 @@ export default function Index() {
   // 敲木鱼
   const handleTap = (e: any) => {
     // 防止多指同时触发：只响应单指触摸
-    if (e.touches && e.touches.length > 1) {
-      return
-    }
+    if (e.touches && e.touches.length > 1) return
     
-    const now = Date.now();
-    const interval = now - lastTapTime.current;
+    const now = Date.now()
+    const interval = now - lastTapTime.current
+    const s = settingRef.current
     
-    const { combo_interval_min, combo_interval_max } = muyuConfig;
+    const { combo_interval_min, combo_interval_max } = muyuConfig
     
     if (lastTapTime.current === 0) {
-      comboCount.current = 1;
-      if (setting.vibration) Taro.vibrateShort({ type: 'light' });
+      comboCount.current = 1
+      if (s.vibration) Taro.vibrateShort({ type: 'light' })
+    } else if (interval >= combo_interval_min && interval <= combo_interval_max) {
+      comboCount.current += 1
+      if (s.vibration) Taro.vibrateShort({ type: 'medium' })
     } else {
-      if (interval >= combo_interval_min && interval <= combo_interval_max) {
-        comboCount.current += 1;
-        if (setting.vibration) Taro.vibrateShort({ type: 'medium' });
-      } else {
-        comboCount.current = 1;
-        setStage(1); // 重置为阶段 1
-        if (setting.vibration) Taro.vibrateShort({ type: 'light' });
-      }
+      comboCount.current = 1
+      if (s.vibration) Taro.vibrateShort({ type: 'light' })
     }
-    lastTapTime.current = now;
+    lastTapTime.current = now
 
-    // 超过连击窗口后自动重置阶段（不需要等第二次敲击）
-    if (comboResetTimer.current) clearTimeout(comboResetTimer.current);
+    // 超过连击窗口后自动重置阶段
+    if (comboResetTimer.current) clearTimeout(comboResetTimer.current)
     comboResetTimer.current = setTimeout(() => {
-      comboCount.current = 0;
-      lastTapTime.current = 0;
-      setStage(1);
-    }, combo_interval_max + 250);
+      comboCount.current = 0
+      lastTapTime.current = 0
+      stageRef.current = 1
+      setStage(1)
+    }, combo_interval_max + 250)
 
-    // --- 计算阶段颜色和加分 ---
+    // --- 计算阶段和加分 ---
     const { 
       blue_combo, red_combo, orange_combo, purple_combo, 
       normal_merit, blue_merit, red_merit, orange_merit, purple_merit
-    } = muyuConfig;
+    } = muyuConfig
 
-    let meritAdd = normal_merit;
-    let currentStage: ComboStage = 1;
-    const c = comboCount.current;
+    let meritAdd = normal_merit
+    let currentStage: ComboStage = 1
+    const c = comboCount.current
     
-    if (c >= purple_combo) {
-      currentStage = 5;
-      meritAdd = purple_merit;
-    } else if (c >= orange_combo) {
-      currentStage = 4;
-      meritAdd = orange_merit;
-    } else if (c >= red_combo) {
-      currentStage = 3;
-      meritAdd = red_merit;
-    } else if (c >= blue_combo) {
-      currentStage = 2;
-      meritAdd = blue_merit;
-    } else {
-      currentStage = 1;
-      meritAdd = normal_merit;
-    }
+    if (c >= purple_combo) { currentStage = 5; meritAdd = purple_merit }
+    else if (c >= orange_combo) { currentStage = 4; meritAdd = orange_merit }
+    else if (c >= red_combo) { currentStage = 3; meritAdd = red_merit }
+    else if (c >= blue_combo) { currentStage = 2; meritAdd = blue_merit }
     
-    // 音效优先播放，减少感知延迟
+    // 音效最优先
     playTapSound()
     
-    setStage(currentStage);
+    // 只在阶段变化时触发 re-render
+    if (currentStage !== stageRef.current) {
+      stageRef.current = currentStage
+      setStage(currentStage)
+    }
     
     // 沉浸模式逻辑
-    const { immersive_tap_count, immersive_timeout } = muyuConfig;
-    if (setting.immersive_mode) {
-      tapCount.current += 1;
+    const { immersive_tap_count, immersive_timeout } = muyuConfig
+    if (s.immersive_mode) {
+      tapCount.current += 1
       if (tapCount.current >= immersive_tap_count) {
-        setImmersiveHidden(true);
+        setImmersiveHidden(true)
       }
-      if (immersiveTimer.current) {
-        clearTimeout(immersiveTimer.current);
-      }
+      if (immersiveTimer.current) clearTimeout(immersiveTimer.current)
       immersiveTimer.current = setTimeout(() => {
-        setImmersiveHidden(false);
-        tapCount.current = 0;
-      }, immersive_timeout);
+        setImmersiveHidden(false)
+        tapCount.current = 0
+      }, immersive_timeout)
     }
 
+    // 缩放动画：清除上一个定时器，避免快速连击时堆积
+    if (animateTimer.current) clearTimeout(animateTimer.current)
     setIsAnimate(true)
-    setTimeout(() => setIsAnimate(false), 100)
+    animateTimer.current = setTimeout(() => setIsAnimate(false), 100)
 
+    // 立即更新功德
+    setMerit(prev => prev + meritAdd)
+    pendingMerit.current += meritAdd
+    if (syncTimer.current) clearTimeout(syncTimer.current)
+    syncTimer.current = setTimeout(syncMeritToBackend, 1000)
+    
     // 粒子颜色映射
     const colors: Record<ComboStage, string> = {
       1: '#ffffff',
-      2: '#83d9ff', // 蓝青
-      3: '#80ffff', // 黄绿
-      4: '#ffb04e', // 橙黄
-      5: '#ff7c4b'  // 红橙
+      2: '#83d9ff',
+      3: '#80ffff',
+      4: '#ffb04e',
+      5: '#ff7c4b'
     }
     
-    const addValue = meritAdd
-    
-    // 只要是连击（comboCount >= 2），就显示粒子效果，和阶段无关
     const withParticles = comboCount.current >= 2
 
     particleRef.current?.emit(
@@ -383,22 +385,16 @@ export default function Index() {
       poolTarget.current.y,
       `功德+${meritAdd}`,
       colors[currentStage],
-      withParticles,
-      () => {
-        setMerit(prev => prev + addValue)
-        pendingMerit.current += addValue
-        
-        if (syncTimer.current) clearTimeout(syncTimer.current)
-        syncTimer.current = setTimeout(syncMeritToBackend, 1000)
-      }
+      withParticles
     )
   }
 
   useEffect(() => {
     return () => {
-      if (syncTimer.current) clearTimeout(syncTimer.current);
-      if (comboResetTimer.current) clearTimeout(comboResetTimer.current);
-      syncMeritToBackend();
+      if (syncTimer.current) clearTimeout(syncTimer.current)
+      if (comboResetTimer.current) clearTimeout(comboResetTimer.current)
+      if (animateTimer.current) clearTimeout(animateTimer.current)
+      syncMeritToBackend()
     }
   }, [])
 
@@ -413,11 +409,9 @@ export default function Index() {
         <View className='navbar-item' onClick={() => { playClickSound(); setShowGalleryModal(true) }}>
           <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/catlog_new.png' style={{ width:'72rpx', height:'62rpx' }} />
         </View>
-        {showWish && (
-          <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/fulfill/index' }) }}>
-            <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/wish_new.png' style={{ width:'80rpx', height:'62rpx' }} />
-          </View>
-        )}
+        <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/fulfill/index' }) }}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/wish_new.png' style={{ width:'80rpx', height:'62rpx' }} />
+        </View>
         <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/beings/index' }) }}>
           <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/live_new.png' style={{ width:'76rpx', height:'62rpx' }} />
         </View>
@@ -434,7 +428,7 @@ export default function Index() {
       >
         <View className='merit-pool' style={{ borderColor: merit >= meritPoolMax ? '#FDC74E' : '#454545' }}>
           <View className='merit-pool-current' style={{ width: `${merit >= meritPoolMax ? 100 : (merit / meritPoolMax) * 100}%` }} />
-          { merit >= meritPoolMax && showWish && (
+          { merit >= meritPoolMax && (
             <>
               <Text className={`merit-pool-title ${immersiveHidden ? 'immersive-hidden' : ''}`}>池已满，点击祈愿</Text>
             </>
@@ -484,7 +478,7 @@ export default function Index() {
       </View>
       
       <ParticleCanvas ref={particleRef} />
-      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} showWish={showWish} />
+      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
       <DonateModal 
         show={showDonateModal} 
         onClose={() => { setShowDonateModal(false); setShareCardInfo(null); }} 
@@ -501,7 +495,7 @@ export default function Index() {
       <SettingModal 
         show={showSettingModal} 
         onClose={() => setShowSettingModal(false)} 
-        onSettingChange={setSetting}
+        onSettingChange={(s) => { setSetting(s); settingRef.current = s }}
       />
       {/* 配置弹窗（调试时打开）
       {USE_SERVER_CONFIG && (
@@ -531,6 +525,32 @@ export default function Index() {
         cardInfo={pendingShareCard}
         onUnlockSuccess={init}
       />
+      {/* 分享心愿弹窗 */}
+      {showSharedWishModal && sharedWishInfo && (
+        <View className='shared-wish-modal' onClick={() => setShowSharedWishModal(false)}>
+          <View className='shared-wish-content' onClick={(e) => e.stopPropagation()}>
+            <Text className='shared-wish-from'>
+              好友送你一个心愿
+            </Text>
+            <Text className='shared-wish-text'>{sharedWishInfo.content}</Text>
+            <View className='shared-wish-btn' onClick={async () => {
+              playClickSound()
+              try {
+                const res: any = await receiveSharedWish(sharedWishInfo.id)
+                Taro.showToast({
+                  title: res.duplicate ? (res.msg || '你已拥有这个心愿') : '收下心愿成功',
+                  icon: res.duplicate ? 'none' : 'success'
+                })
+                setShowSharedWishModal(false)
+              } catch (err) {
+                console.error('接收心愿失败:', err)
+              }
+            }}>
+              <Text>收下心愿</Text>
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   )
 }
