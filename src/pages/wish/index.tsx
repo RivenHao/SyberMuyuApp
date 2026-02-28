@@ -130,7 +130,7 @@ export default function Wish() {
     setSubmitting(true)
     playClickSound()
     try {
-      const res: any = await createWish({ content: currentWish.content, merit_cost: 0 })
+      const res: any = await createWish({ content: currentWish.content, merit_cost: meritCost })
       setCreatedWishId(res.id)
       Taro.showToast({ 
         title: '心愿已收下', 
