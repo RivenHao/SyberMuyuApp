@@ -31,6 +31,5 @@ export const playClickSound = () => {
   const ctx = pool[index % pool.length]
   index = (index + 1) % pool.length
   ctx.stop()
-  ctx.seek(0)
   ctx.play()
 }

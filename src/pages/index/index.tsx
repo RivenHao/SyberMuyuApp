@@ -87,12 +87,7 @@ export default function Index() {
     const POOL_SIZE = 6
     for (let i = 0; i < POOL_SIZE; i++) {
       const ctx = Taro.createInnerAudioContext()
-      ctx.startTime = 0.2 // 跳过音频前面的静音段
       ctx.src = TAP_SOUND_URL
-      // 播完后自动 seek 回起点，下次 play 无需 stop
-      ctx.onEnded(() => {
-        ctx.seek(0.2)
-      })
       audioPool.current.push(ctx)
     }
     
