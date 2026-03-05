@@ -25,7 +25,7 @@
         {
           "name": "收到祝福",
           "pathName": "pages/index/index",
-          "query": "wish_id=15",
+          "query": "category_id=1&wish_item_id=7",
           "scene": null,
           "launchMode": "default"
         },

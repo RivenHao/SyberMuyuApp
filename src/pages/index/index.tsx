@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useLoad } from '@tarojs/taro'
 import './index.scss'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getSharedWish, receiveSharedWish, getWishCategoriesAll, getUserWishes } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getWishCategoriesAll, getUserWishes, createWish } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
@@ -15,6 +15,16 @@ import ParticleCanvas, { ParticleCanvasRef } from '../../components/ParticleCanv
 import { DEFAULT_MUYU_CONFIG } from '../../config/muyuConfig'
 // import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
 import { playClickSound, preloadClickSound } from '../../utils/clickSound'
+
+// 心愿大类主题颜色（渐变）
+const WISH_CATEGORY_GRADIENTS: Record<number, string> = {
+  1: 'radial-gradient(50% 50% at 50% 50%, #F8B69F 0%, #D4836A 100%)',
+  2: 'radial-gradient(50% 50% at 50% 50%, #EBB4CF 0%, #C4809E 100%)',
+  3: 'radial-gradient(50% 50% at 50% 50%, #FFE5C8 0%, #D4A872 100%)',
+  4: 'radial-gradient(50% 50% at 50% 50%, #FFFAA6 0%, #D4C85A 100%)',
+  5: 'radial-gradient(50% 50% at 50% 50%, #CEF1E8 0%, #7DBFAE 100%)',
+  6: 'radial-gradient(50% 50% at 50% 50%, #D7FFDF 0%, #8AD49A 100%)',
+}
 
 // 图片资源配置 (OSS URL) - 请替换为实际的 OSS 地址
 const MUYU_IMGS = {
@@ -194,7 +204,7 @@ export default function Index() {
   })
 
   // 处理分享链接进入时的卡片展示
-  useLoad((options: { cardId?: string; wish_id?: string }) => {
+  useLoad((options: { cardId?: string; category_id?: string; wish_item_id?: string }) => {
     if (options.cardId) {
       const cardId = Number(options.cardId)
       if (cardId > 0) {
@@ -223,19 +233,22 @@ export default function Index() {
     }
 
     // 处理分享心愿链接
-    if (options.wish_id) {
-      const wishId = Number(options.wish_id)
-      if (wishId > 0) {
-        setTimeout(async () => {
-          try {
-            const data = await getSharedWish(wishId)
-            setSharedWishInfo(data)
+    if (options.category_id && options.wish_item_id) {
+      const categoryId = Number(options.category_id)
+      const wishItemId = Number(options.wish_item_id)
+      setTimeout(async () => {
+        try {
+          const cats = await getWishCategoriesAll()
+          const cat = cats.find((c: any) => c.id === categoryId)
+          const wishItem = cat?.items?.find((i: any) => i.id === wishItemId)
+          if (wishItem) {
+            setSharedWishInfo({ content: wishItem.content, category_id: categoryId })
             setShowSharedWishModal(true)
-          } catch (err: any) {
-            console.log('获取分享心愿失败:', err?.msg || err)
           }
-        }, 500)
-      }
+        } catch (err: any) {
+          console.log('获取分享心愿失败:', err?.msg || err)
+        }
+      }, 500)
     }
   })
 
@@ -539,25 +552,34 @@ export default function Index() {
       {/* 分享心愿弹窗 */}
       {showSharedWishModal && sharedWishInfo && (
         <View className='shared-wish-modal' onClick={() => setShowSharedWishModal(false)}>
-          <View className='shared-wish-content' onClick={(e) => e.stopPropagation()}>
-            <Text className='shared-wish-from'>
-              好友送你一个心愿
-            </Text>
-            <Text className='shared-wish-text'>{sharedWishInfo.content}</Text>
-            <View className='shared-wish-btn' onClick={async () => {
+          <View className='shared-wish-detail' onClick={(e) => e.stopPropagation()}>
+            <View className='shared-wish-card'>
+              <Image 
+                className='shared-wish-card-bg' 
+                src={`https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish_card_${sharedWishInfo.category_id || 1}.png`} 
+                mode='aspectFit'
+              />
+              <View className='shared-wish-card-content'>
+                <Text className='shared-wish-card-text'>{sharedWishInfo.content}</Text>
+              </View>
+            </View>
+            <View className='shared-wish-btn' style={{ background: WISH_CATEGORY_GRADIENTS[sharedWishInfo.category_id] || 'radial-gradient(50% 50% at 50% 50%, #DABD83 0%, #C68F42 100%)' }} onClick={async () => {
               playClickSound()
               try {
-                const res: any = await receiveSharedWish(sharedWishInfo.id)
-                Taro.showToast({
-                  title: res.duplicate ? (res.msg || '你已拥有这个心愿') : '收下心愿成功',
-                  icon: res.duplicate ? 'none' : 'success'
-                })
+                const userWishes = await getUserWishes()
+                const alreadyOwned = (userWishes as any[]).some((w: any) => w.content === sharedWishInfo.content)
+                if (alreadyOwned) {
+                  Taro.showToast({ title: '你已拥有这个心愿', icon: 'none' })
+                } else {
+                  await createWish({ content: sharedWishInfo.content, merit_cost: 0 })
+                  Taro.showToast({ title: '收下心愿成功', icon: 'none' })
+                }
                 setShowSharedWishModal(false)
               } catch (err) {
                 console.error('接收心愿失败:', err)
               }
             }}>
-              <Text>收下心愿</Text>
+              <Text>收下好友祝福</Text>
             </View>
           </View>
         </View>

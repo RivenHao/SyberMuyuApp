@@ -49,7 +49,6 @@ export default function Wish() {
   const [selectedCategory, setSelectedCategory] = useState<WishCategory | null>(null) // TODO: 调试用，改回 null
   const [currentWish, setCurrentWish] = useState<WishItem | null>(null) // TODO: 调试用，改回 null
   const [shuffleUsed, setShuffleUsed] = useState(false)
-  const [createdWishId, setCreatedWishId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [animPhase, setAnimPhase] = useState<AnimPhase>('selecting') // TODO: 调试用，改回 'selecting'
   const [tappedIdx, setTappedIdx] = useState<number>(-1)
@@ -63,10 +62,10 @@ export default function Wish() {
   })
 
   useShareAppMessage(() => {
-    if (createdWishId && currentWish) {
+    if (currentWish && selectedCategory) {
       return {
         title: '好友送你一份心愿祝福',
-        path: `/pages/index/index?wish_id=${createdWishId}`,
+        path: `/pages/index/index?category_id=${selectedCategory.id}&wish_item_id=${currentWish.id}`,
         imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish_share.png'
       }
     }
@@ -96,7 +95,7 @@ export default function Wish() {
   const handleSelectCategory = (cat: WishCategory, idx: number) => {
     playClickSound()
     if (!cat.items || cat.items.length === 0) {
-      Taro.showToast({ title: '该分类心愿已集齐', icon: 'none' })
+      Taro.showToast({ title: '已摘下所有心愿牌，试试其他类型', icon: 'none' })
       return
     }
     setSelectedCategory(cat)
@@ -163,8 +162,7 @@ export default function Wish() {
     setSubmitting(true)
     playClickSound()
     try {
-      const res: any = await createWish({ content: currentWish.content, merit_cost: meritCost })
-      setCreatedWishId(res.id)
+      await createWish({ content: currentWish.content, merit_cost: meritCost })
       Taro.showToast({ 
         title: '心愿已收下', 
         icon: 'success',
