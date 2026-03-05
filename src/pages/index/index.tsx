@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { View, Text, Image } from '@tarojs/components'
 import Taro, { useDidShow, useShareAppMessage, useLoad } from '@tarojs/taro'
 import './index.scss'
-import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getSharedWish, receiveSharedWish } from '../../apis'
+import { syncMerit, SettingData, getUserInfo, getSetting, getUserGalleryList, MuyuConfigData, checkShareCard, getSharedWish, receiveSharedWish, getWishCategoriesAll, getUserWishes } from '../../apis'
 import { ensureLogin } from '../../utils/auth'
 import WishModal from '../../components/WishModal'
 import DonateModal from '../../components/DonateModal'
@@ -57,6 +57,7 @@ export default function Index() {
   const settingRef = useRef<SettingData>({ sound: true, vibration: true })
   const [immersiveHidden, setImmersiveHidden] = useState(false) // 沉浸模式是否隐藏UI
   const [allCollected, setAllCollected] = useState(false) // 是否已集齐所有佛理图鉴
+  const [allWishesCollected, setAllWishesCollected] = useState(false) // 是否已集齐所有心愿
   const [shareCardInfo, setShareCardInfo] = useState<any>(null) // 当前分享的卡片信息
   const [showShareUnlockModal, setShowShareUnlockModal] = useState(false) // 分享解锁结果弹窗（已拥有时显示）
   const [shareUnlockCardTitle, setShareUnlockCardTitle] = useState<string | undefined>(undefined)
@@ -68,6 +69,7 @@ export default function Index() {
   const immersiveTimer = useRef<any>(null) // 沉浸模式恢复定时器
   const comboResetTimer = useRef<any>(null) // 连击重置定时器
   const animateTimer = useRef<any>(null) // 缩放动画定时器
+  const isAnimateRef = useRef(false) // 缩放动画状态 ref，避免闭包陈旧
   const stageRef = useRef<ComboStage>(1) // 用 ref 跟踪阶段，避免不必要的 re-render
   
   // 粒子效果相关
@@ -154,6 +156,14 @@ export default function Index() {
       
       const galleryRes = await getUserGalleryList()
       setAllCollected(galleryRes.ownedNum === galleryRes.total)
+
+      // 检查是否已集齐所有心愿
+      const [wishCats, userWishes] = await Promise.all([getWishCategoriesAll(), getUserWishes()])
+      const ownedContents = new Set((userWishes as any[]).map((w: any) => w.content))
+      const totalWishItems = wishCats.reduce((sum: number, cat: any) => sum + (cat.items?.length || 0), 0)
+      const remainingItems = wishCats.reduce((sum: number, cat: any) => 
+        sum + (cat.items?.filter((item: any) => !ownedContents.has(item.content)).length || 0), 0)
+      setAllWishesCollected(totalWishItems > 0 && remainingItems === 0)
     } catch (err) {
       console.error('初始化失败:', err)
     }
@@ -294,13 +304,13 @@ export default function Index() {
     
     if (lastTapTime.current === 0) {
       comboCount.current = 1
-      if (s.vibration) Taro.vibrateShort({ type: 'light' })
+      if (s.vibration) Taro.vibrateShort({ type: 'light' }).catch(() => {})
     } else if (interval >= combo_interval_min && interval <= combo_interval_max) {
       comboCount.current += 1
-      if (s.vibration) Taro.vibrateShort({ type: 'medium' })
+      if (s.vibration) Taro.vibrateShort({ type: 'medium' }).catch(() => {})
     } else {
       comboCount.current = 1
-      if (s.vibration) Taro.vibrateShort({ type: 'light' })
+      if (s.vibration) Taro.vibrateShort({ type: 'light' }).catch(() => {})
     }
     lastTapTime.current = now
 
@@ -353,8 +363,14 @@ export default function Index() {
 
     // 缩放动画：清除上一个定时器，避免快速连击时堆积
     if (animateTimer.current) clearTimeout(animateTimer.current)
-    setIsAnimate(true)
-    animateTimer.current = setTimeout(() => setIsAnimate(false), 100)
+    if (!isAnimateRef.current) {
+      isAnimateRef.current = true
+      setIsAnimate(true)
+    }
+    animateTimer.current = setTimeout(() => {
+      isAnimateRef.current = false
+      setIsAnimate(false)
+    }, 100)
 
     // 立即更新功德
     setMerit(prev => prev + meritAdd)
@@ -473,7 +489,7 @@ export default function Index() {
       </View>
       
       <ParticleCanvas ref={particleRef} />
-      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} />
+      <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={meritPoolMax} allCollected={allCollected} allWishesCollected={allWishesCollected} />
       <DonateModal 
         show={showDonateModal} 
         onClose={() => { setShowDonateModal(false); setShareCardInfo(null); }} 

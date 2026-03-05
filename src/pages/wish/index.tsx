@@ -23,21 +23,40 @@ const randomPick = (arr: WishItem[]): WishItem | null => {
   return arr[Math.floor(Math.random() * arr.length)]
 }
 
-// 动画阶段：selecting=大类选择, dropping=卡片掉落中, detail=心愿详情
-type AnimPhase = 'selecting' | 'dropping' | 'detail'
+// 许愿图片资源（大类封面 + 小类卡片）
+const WISH_OSS = 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish'
+const getCategoryCover = (id: number) => `${WISH_OSS}/wish_tree_new_${id}.png`
+const getWishCardCover = (id: number) => `${WISH_OSS}/wish_card_${id}.png`
+const getWishSwitchBtn = (id: number) => `${WISH_OSS}/wish_switch_${id}.png`
+const getWishBgCircle = (id: number) => `${WISH_OSS}/wish_circle_${id}.png`
+// 「换一个」文字颜色映射（按大类 id）
+// 大类主题颜色映射（用于文字颜色、光晕等）
+const CATEGORY_COLORS: Record<number, string> = {
+  1: '#F8B69F',
+  2: '#EBB4CF',
+  3: '#FFE5C8',
+  4: '#FFFAA6',
+  5: '#CEF1E8',
+  6: '#D7FFDF',
+}
+
+// 动画阶段：selecting=大类选择, confirmed=已选中待确认, dropping=卡片掉落中, detail=心愿详情
+type AnimPhase = 'selecting' | 'confirmed' | 'dropping' | 'detail'
 
 export default function Wish() {
   const [meritCost, setMeritCost] = useState(0)
   const [categories, setCategories] = useState<WishCategory[]>([])
-  const [selectedCategory, setSelectedCategory] = useState<WishCategory | null>(null)
-  const [currentWish, setCurrentWish] = useState<WishItem | null>(null)
+  const [selectedCategory, setSelectedCategory] = useState<WishCategory | null>(null) // TODO: 调试用，改回 null
+  const [currentWish, setCurrentWish] = useState<WishItem | null>(null) // TODO: 调试用，改回 null
   const [shuffleUsed, setShuffleUsed] = useState(false)
   const [createdWishId, setCreatedWishId] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [animPhase, setAnimPhase] = useState<AnimPhase>('selecting')
+  const [animPhase, setAnimPhase] = useState<AnimPhase>('selecting') // TODO: 调试用，改回 'selecting'
   const [tappedIdx, setTappedIdx] = useState<number>(-1)
-  const [detailReady, setDetailReady] = useState(false)
+  const [detailReady, setDetailReady] = useState(false) // TODO: 调试用，改回 false
   const animTimerRef = useRef<any>(null)
+  const [shuffleSpinning, setShuffleSpinning] = useState(false)
+  const [textFading, setTextFading] = useState(false)
 
   useLoad((options: { merit_cost?: string }) => {
     if (options.merit_cost) setMeritCost(Number(options.merit_cost))
@@ -46,11 +65,12 @@ export default function Wish() {
   useShareAppMessage(() => {
     if (createdWishId && currentWish) {
       return {
-        title: `我许下了一个心愿：${currentWish.content}`,
+        title: '好友送你一份心愿祝福',
         path: `/pages/index/index?wish_id=${createdWishId}`,
+        imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish_share.png'
       }
     }
-    return { title: '来许个愿吧', path: '/pages/index/index' }
+    return { title: '来许个愿吧', path: '/pages/index/index', imageUrl: 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish_share.png' }
   })
 
   useEffect(() => {
@@ -72,23 +92,32 @@ export default function Wish() {
     fetchData()
   }, [])
 
-  // 选择大类：触发掉落动画，然后扣功德
-  const handleSelectCategory = async (cat: WishCategory, idx: number) => {
+  // 选择大类：高亮选中，显示确认按钮
+  const handleSelectCategory = (cat: WishCategory, idx: number) => {
     playClickSound()
-    const wish = randomPick(cat.items)
+    if (!cat.items || cat.items.length === 0) {
+      Taro.showToast({ title: '该分类心愿已集齐', icon: 'none' })
+      return
+    }
+    setSelectedCategory(cat)
+    setTappedIdx(idx)
+    setAnimPhase('confirmed')
+  }
+
+  // 确认取下心愿：触发掉落动画，扣功德
+  const handleConfirmPick = async () => {
+    if (!selectedCategory) return
+    playClickSound()
+    const wish = randomPick(selectedCategory.items)
     if (!wish) return
 
-    // 阶段1：被点击的卡片掉落，其他卡片淡出
-    setTappedIdx(idx)
-    setAnimPhase('dropping')
     setCurrentWish(wish)
-    setSelectedCategory(cat)
+    setAnimPhase('dropping')
 
-    // 阶段2：掉落动画结束后，切到详情页，心愿卡从上方掉入
+    // 掉落动画结束后，切到详情页
     animTimerRef.current = setTimeout(() => {
       setAnimPhase('detail')
-      // 延迟一帧再触发入场动画，确保DOM已渲染
-      setTimeout(() => setDetailReady(true), 50)
+      setTimeout(() => setDetailReady(true), 100)
     }, 900)
 
     try {
@@ -104,7 +133,6 @@ export default function Wish() {
     } catch (err) {
       console.error('扣除功德失败:', err)
       Taro.showToast({ title: '功德不足', icon: 'none' })
-      // 回退动画
       clearTimeout(animTimerRef.current)
       setAnimPhase('selecting')
       setTappedIdx(-1)
@@ -118,9 +146,14 @@ export default function Wish() {
   const handleShuffle = () => {
     if (!selectedCategory || shuffleUsed) return
     playClickSound()
+    setShuffleSpinning(true)
+    setTextFading(true)
     const others = selectedCategory.items.filter(i => i.id !== currentWish?.id)
     const pool = others.length > 0 ? others : selectedCategory.items
-    setCurrentWish(randomPick(pool))
+    setTimeout(() => {
+      setCurrentWish(randomPick(pool))
+      setTextFading(false)
+    }, 250)
     setShuffleUsed(true)
   }
 
@@ -148,41 +181,51 @@ export default function Wish() {
 
   return (
     <View className='index-page'>
-      <Image className='wish-bg-circle' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish-bg-circle.png' />
+      <Image className='wish-bg-circle' src={selectedCategory ? getWishBgCircle(selectedCategory.id) : `${WISH_OSS}/wish-bg-circle.png`} />
       
       {/* 返回按钮：选完大类后隐藏 */}
-      {animPhase === 'selecting' && (
-        <View className='wish-title' onClick={() => { playClickSound(); Taro.navigateBack() }}>
+      {(animPhase === 'selecting' || animPhase === 'confirmed') && (
+        <View className='wish-title' onClick={() => { 
+          playClickSound()
+          Taro.navigateBack()
+        }}>
           <Image className='wish-title-icon' src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/icon/back.png' />
           <Text className='wish-title-text'>返回</Text>
         </View>
       )}
 
       {/* 大类选择 */}
-      {(animPhase === 'selecting' || animPhase === 'dropping') && (
+      {(animPhase === 'selecting' || animPhase === 'confirmed' || animPhase === 'dropping') && (
         <View className={`wish-category-list ${animPhase === 'dropping' ? 'wish-category-list--exiting' : ''}`}>
           <Text className={`wish-category-title ${animPhase === 'dropping' ? 'wish-title--fadeout' : ''}`}>取下一个心愿吧</Text>
           <View className='wish-category-grid'>
-            {categories.map((cat, idx) => (
-              <View 
-                key={cat.id} 
-                className={`wish-category-item wish-category-item-${idx} ${
-                  animPhase === 'dropping' 
-                    ? (idx === tappedIdx ? 'wish-card--drop' : 'wish-card--fadeout') 
-                    : ''
-                }`} 
-                onClick={() => animPhase === 'selecting' && handleSelectCategory(cat, idx)}
-              >
-                <Image 
-                  className='wish-category-item-bg' 
-                  src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wishContentCard.png' 
-                  mode='aspectFit'
-                />
-                <View className='wish-category-item-content'>
-                  <Text className='wish-category-name'>{cat.name}</Text>
+            <Image className={`wish-tree ${animPhase === 'dropping' ? 'wish-card--fadeout' : ''}`} src="https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish_tree.png" />
+            {categories.map((cat, idx) => {
+              return (
+                <View 
+                  key={cat.id} 
+                  className={`wish-category-item wish-category-item-${idx} ${
+                    animPhase === 'dropping' 
+                      ? (idx === tappedIdx ? 'wish-card--drop' : 'wish-card--fadeout') 
+                      : ''
+                  }`}
+                  onClick={() => (animPhase === 'selecting' || animPhase === 'confirmed') && handleSelectCategory(cat, idx)}
+                >
+                  <Image 
+                    className='wish-category-item-bg' 
+                    src={getCategoryCover(cat.id)} 
+                    mode='aspectFit'
+                    style={{ opacity: animPhase === 'confirmed' && tappedIdx === idx ? 0 : 1 }}
+                  />
+                  <Image 
+                    className='wish-category-item-bg wish-category-item-bg--selected' 
+                    src={`${WISH_OSS}/wish_select_${cat.id}.png`} 
+                    mode='aspectFit'
+                    style={{ opacity: animPhase === 'confirmed' && tappedIdx === idx ? 1 : 0 }}
+                  />
                 </View>
-              </View>
-            ))}
+              )
+            })}
           </View>
         </View>
       )}
@@ -193,26 +236,37 @@ export default function Wish() {
           <View className={`wish-card ${detailReady ? 'wish-card--enter' : 'wish-card--before-enter'}`}>
             <Image 
               className='wish-card-bg' 
-              src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wishContentCard.png' 
+              src={selectedCategory ? getWishCardCover(selectedCategory.id) : `${WISH_OSS}/wishContentCard.png`} 
               mode='aspectFit'
             />
             <View className='wish-card-content'>
-              <Text className='wish-text'>{currentWish.content}</Text>
+              <Text className={`wish-text ${textFading ? 'wish-text--fading' : ''}`}>{currentWish.content}</Text>
             </View>
           </View>
-          {/* 换一个：用过后消失 */}
-          {!shuffleUsed && (
-            <View className={`wish-shuffle-btn ${detailReady ? 'wish-btn--fadein' : ''}`} onClick={handleShuffle}>🔄 换一个</View>
+          {/* 换一个：用过后置灰 */}
+          {detailReady && (
+            <View className={`wish-shuffle-btn wish-btn--fadein ${shuffleUsed ? 'disabled' : ''}`} onClick={handleShuffle}>
+              <Image className={`wish-switch-btn ${shuffleSpinning ? 'spinning' : ''}`} src={selectedCategory ? getWishSwitchBtn(selectedCategory.id) : 'https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/wish/wish_switch_1.png'}/>
+              <Text className="wish-switch-text" style={{ color: selectedCategory ? (CATEGORY_COLORS[selectedCategory.id]) : '#000000' }}>换一个</Text>
+            </View>
           )}
           {/* 底部按钮 */}
-          <View className={`wish-bottom-actions ${detailReady ? 'wish-btn--fadein' : ''}`}>
-            <Button className='wish-action-btn' openType='share' onClick={() => playClickSound()}>
-              送给好友
-            </Button>
-            <View className='wish-action-btn' onClick={handleConfirm}>
-              {submitting ? '收下中...' : '收下愿望'}
+          {detailReady && (
+            <View className='wish-bottom-actions wish-btn--fadein'>
+              <Button className='wish-action-btn' openType='share' onClick={() => playClickSound()}>
+                祝福好友
+              </Button>
+              <View className='wish-action-btn' onClick={handleConfirm}>
+                {submitting ? '祈福...' : '收下心愿'}
+              </View>
             </View>
-          </View>
+          )}
+        </View>
+      )}
+      {/* 确认取下按钮 */}
+      {animPhase === 'confirmed' && (
+        <View className='wish-confirm-pick' onClick={handleConfirmPick}>
+          <Text className='wish-confirm-pick-text'>取下心愿</Text>
         </View>
       )}
     </View>

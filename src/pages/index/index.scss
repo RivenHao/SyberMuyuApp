@@ -106,9 +106,12 @@
   overflow: visible;
 
   // 点击缩放作用于整体，避免木鱼与发光层割裂
+  transition: transform 0.1s ease;
+  
   &.active {
     transform: translateX(-50%) scale(0.95);
     transform-origin: center bottom;
+    transition: transform 0.05s ease;
   }
 
   // 通用图片样式
