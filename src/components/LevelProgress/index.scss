@@ -1,0 +1,54 @@
+.level-progress {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__header {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  &__level {
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  &__title {
+    font-size: 24px;
+    font-weight: 500;
+  }
+
+  &__merit {
+    margin-left: auto;
+    font-size: 22px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  &__bar-wrap {
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+  }
+
+  &__bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+  }
+
+  &__footer {
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  &__max {
+    color: #F5F5DC;
+  }
+
+  &__remaining {
+    color: rgba(255, 255, 255, 0.5);
+  }
+}
