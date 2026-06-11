@@ -16,7 +16,7 @@ import { DEFAULT_MUYU_CONFIG } from '../../config/muyuConfig'
 // import { DEFAULT_MUYU_CONFIG, USE_SERVER_CONFIG } from '../../config/muyuConfig'
 import { playClickSound, preloadClickSound } from '../../utils/clickSound'
 import { useLevelInfo } from '../../hooks/useLevelInfo'
-import LevelUpModal from '../../components/LevelUpModal'
+import LevelUpToast from '../../components/LevelUpToast'
 
 // 心愿大类主题颜色（渐变）
 const WISH_CATEGORY_GRADIENTS: Record<number, string> = {
@@ -533,6 +533,9 @@ export default function Index() {
         <View className='navbar-item' onClick={() => { playClickSound(); Taro.navigateTo({ url: '/pages/beings/index' }) }}>
           <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/live_new.png' style={{ width:'76rpx', height:'62rpx' }} />
         </View>
+        <View className='navbar-item' onClick={() => { playClickSound(); handleWish() }}>
+          <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/pray_new.png' style={{ width:'72rpx', height:'62rpx' }} />
+        </View>
         {/* 配置按钮（调试时打开）
         <View className='navbar-item' onClick={() => { playClickSound(); setShowMuyuConfigModal(true) }}>
           配置
@@ -540,14 +543,15 @@ export default function Index() {
         */}
       </View>
 
-      <View 
-        className='merit-pool-container'
-        onClick={() => { playClickSound(); handleWish() }}
-      >
+      <View className='merit-pool-container'>
         <View className='merit-pool' style={{ borderColor: levelInfo.isMax ? '#FDC74E' : '#454545' }}>
           <View className='merit-pool-current' style={{ width: `${levelInfo.progress * 100}%` }} />
           <Text className={`merit-pool-title ${immersiveHidden ? 'immersive-hidden' : ''}`}>Lv.{userLevel} {levelInfo.current.title}</Text>
-          <Text className='merit-pool-container-text'> {totalMerit} / {levelInfo.isMax ? 'MAX' : levelInfo.next!.threshold} </Text>
+          <Text className='merit-pool-container-text'>
+            {levelInfo.isMax
+              ? 'MAX'
+              : `${totalMerit - levelInfo.current.threshold} / ${levelInfo.next!.threshold - levelInfo.current.threshold}`}
+          </Text>
         </View>
       </View>
 
@@ -596,7 +600,7 @@ export default function Index() {
       </View>
       
       <ParticleCanvas ref={particleRef} />
-      <LevelUpModal queue={levelUpQueue} onComplete={() => setLevelUpQueue([])} />
+      <LevelUpToast queue={levelUpQueue} onComplete={() => setLevelUpQueue([])} />
       <WishModal show={showModal} onClose={() => setShowModal(false)} onDonate={handleDonate} meritCost={WISH_MERIT_COST} allCollected={allCollected} allWishesCollected={allWishesCollected} />
       <DonateModal 
         show={showDonateModal} 

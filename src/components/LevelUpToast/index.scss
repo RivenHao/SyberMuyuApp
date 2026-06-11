@@ -1,0 +1,50 @@
+.level-up-toast {
+  position: fixed;
+  top: 28%;
+  left: 50%;
+  z-index: 9999;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-shadow:
+    0 0 12px currentColor,
+    0 0 32px currentColor;
+  animation: levelUpToast 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+  &__label {
+    font-size: 14px;
+    letter-spacing: 4px;
+    opacity: 0.85;
+  }
+
+  &__main {
+    font-size: 38px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+}
+
+@keyframes levelUpToast {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1.08);
+  }
+  32% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -40px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -90px) scale(0.95);
+  }
+}
