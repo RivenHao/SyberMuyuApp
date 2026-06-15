@@ -413,6 +413,29 @@ export default function Index() {
     )
   }
 
+  const handleJumpToGame = () => {
+    // 读取当前小程序的环境，跳转时同步传给目标小游戏
+    // 注意：envVersion 默认值是 'release'，不传会直接去目标的正式版
+    // 当前是正式版时，envVersion 参数会被微信忽略，必定打开目标正式版
+    const accountInfo = Taro.getAccountInfoSync()
+    const envVersion = accountInfo.miniProgram.envVersion as 'develop' | 'trial' | 'release'
+
+    Taro.navigateToMiniProgram({
+      appId: 'wx2e9ed7a0f0747c89',
+      envVersion,
+      success: () => {
+        console.log('跳转小游戏成功')
+      },
+      fail: (err) => {
+        console.error('跳转小游戏失败', err)
+        Taro.showToast({
+          title: err.errMsg || '跳转失败',
+          icon: 'none'
+        })
+      }
+    })
+  }
+
   useEffect(() => {
     return () => {
       if (syncTimer.current) clearTimeout(syncTimer.current)
@@ -462,6 +485,9 @@ export default function Index() {
         </View>
       </View>
       
+      <View onClick={handleJumpToGame}>
+        <Image src='https://flow-miniprogram.oss-cn-hangzhou.aliyuncs.com/cybermuyu/homePage/ylicon.png' className='yl-icon' />
+      </View>
       {/* 木鱼后方光晕 */}
       <View className={`muyu-glow ${stage >= 2 ? `stage-${stage}` : ''}`} />
       

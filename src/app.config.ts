@@ -11,5 +11,8 @@ export default defineAppConfig({
     navigationBarBackgroundColor: '#fff',
     navigationBarTitleText: 'WeChat',
     navigationBarTextStyle: 'black'
-  }
+  },
+  navigateToMiniProgramAppIdList: [
+    'wx2e9ed7a0f0747c89'
+  ]
 })
